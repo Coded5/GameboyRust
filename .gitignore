@@ -1,0 +1,7 @@
+/target
+/roms
+
+
+*.txt
+*.bin
+Cargo.lock
