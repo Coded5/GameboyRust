@@ -1,4 +1,4 @@
-use crate::emulator::{cpu::{self, Cpu, Z, N, H, C}, memory::Memory};
+use crate::emulator::{cpu::{Cpu, Z, N, H, C}, memory::Memory};
 use super::operand::Operands;
 
 #[allow(dead_code, unused)]
