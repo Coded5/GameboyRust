@@ -6,6 +6,12 @@ pub struct Memory {
     memory: [u8; 0x10000]
 }
 
+impl Default for Memory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Memory {
 
     pub fn new() -> Self {
@@ -29,6 +35,10 @@ impl Memory {
         }
 
         Ok(length)
+    }
+
+    pub fn get_mut_byte(&mut self, address: u16) -> &mut u8 {
+        &mut self.memory[address as usize]
     }
 
     pub fn get_byte(&self, address: u16) -> u8 {

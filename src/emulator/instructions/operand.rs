@@ -41,6 +41,49 @@ impl Operands {
         matches!(*self, Operands::AddrFF00_U8 | Operands::AddrU16 | Operands::SP_i8 | Operands::U8 | Operands::I8 | Operands::U16)
     }
 
+    pub fn get_byte_length(&self) -> usize {
+        match *self {
+            Operands::A => 1,
+            Operands::F => 1,
+            Operands::B => 1,
+            Operands::C => 1,
+            Operands::D => 1,
+            Operands::E => 1,
+            Operands::H => 1,
+            Operands::L => 1,
+            Operands::AF => 2,
+            Operands::BC => 2,
+            Operands::DE => 2,
+            Operands::HL => 2,
+            Operands::SP => 2,
+            Operands::AddrBC => 1,
+            Operands::AddrHL => 1,
+            Operands::AddrHLI => 1,
+            Operands::AddrHLD => 1,
+            Operands::AddrDE => 1,
+            Operands::AddrFF00_C => 1,
+            Operands::AddrFF00_U8 => 1,
+            Operands::AddrU16 => 1,
+            Operands::SP_i8 => 1,
+            Operands::JR_Z => 1,
+            Operands::JR_NZ => 1,
+            Operands::JR_C => 1,
+            Operands::JR_NC => 1,
+            Operands::H28 => 1,
+            Operands::H00 => 1,
+            Operands::H08 => 1,
+            Operands::H20 => 1,
+            Operands::H18 => 1,
+            Operands::H38 => 1,
+            Operands::H30 => 1,
+            Operands::H10 => 1,
+            Operands::U8 => 1,
+            Operands::I8 => 1,
+            Operands::U16 => 2,
+            Operands::I(_) => 1,
+        }
+    }
+
     pub fn get_str_format(&self, byte: u8, short: u16) -> String {
         match *self {
             Operands::A => String::from("A"),
