@@ -29,6 +29,7 @@ pub fn add(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands, operand2: Op
         Operands::SP => cpu.sp = res,
         _ => panic!(),
     }
+
 }
 
 pub fn inc16(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {

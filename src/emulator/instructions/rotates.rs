@@ -107,4 +107,178 @@ pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         _ => panic!(),
     };
 
+    let lsb = src & 0x1;
+    let res = (src >> 1) | (lsb << 7);
+
+    cpu.set(Z, res == 0);
+    cpu.set(N, false);
+    cpu.set(H, false);
+    cpu.set(C, lsb == 1);
+
+    
+    let dest: &mut u8 = match operand {
+        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+        Operands::A => &mut cpu.a,
+        Operands::B => &mut cpu.b,
+        Operands::C => &mut cpu.c,
+        Operands::D => &mut cpu.d,
+        Operands::E => &mut cpu.e,
+        Operands::H => &mut cpu.h,
+        Operands::L => &mut cpu.l,
+        _ => panic!(),
+    };
+
+    *dest = res;
+}
+
+pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+    
+    let src: u8 = match operand {
+        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::A => cpu.a,
+        Operands::B => cpu.b,
+        Operands::C => cpu.c,
+        Operands::D => cpu.d,
+        Operands::E => cpu.e,
+        Operands::H => cpu.h,
+        Operands::L => cpu.l,
+        _ => panic!(),
+    };
+
+    let lsb = src & 0x1;
+    let c = if cpu.c() { 1 } else { 0 };
+    let res = (src >> 1) | (c << 7);
+
+    cpu.set(Z, res == 0);
+    cpu.set(N, false);
+    cpu.set(H, false);
+    cpu.set(C, lsb == 1);
+     
+    let dest: &mut u8 = match operand {
+        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+        Operands::A => &mut cpu.a,
+        Operands::B => &mut cpu.b,
+        Operands::C => &mut cpu.c,
+        Operands::D => &mut cpu.d,
+        Operands::E => &mut cpu.e,
+        Operands::H => &mut cpu.h,
+        Operands::L => &mut cpu.l,
+        _ => panic!(),
+    };
+
+    *dest = res;
+}
+
+pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+    
+    let src: u8 = match operand {
+        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::A => cpu.a,
+        Operands::B => cpu.b,
+        Operands::C => cpu.c,
+        Operands::D => cpu.d,
+        Operands::E => cpu.e,
+        Operands::H => cpu.h,
+        Operands::L => cpu.l,
+        _ => panic!(),
+    };
+
+    let msb = (src >> 7) & 1;
+    let res = src << 1;
+
+    cpu.set(Z, res == 0); 
+    cpu.set(N, false);
+    cpu.set(H, false);
+    cpu.set(C, msb == 1);
+
+    let dest: &mut u8 = match operand {
+        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+        Operands::A => &mut cpu.a,
+        Operands::B => &mut cpu.b,
+        Operands::C => &mut cpu.c,
+        Operands::D => &mut cpu.d,
+        Operands::E => &mut cpu.e,
+        Operands::H => &mut cpu.h,
+        Operands::L => &mut cpu.l,
+        _ => panic!(),
+    };
+
+    *dest = res;
+}
+
+pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+    
+    let src: u8 = match operand {
+        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::A => cpu.a,
+        Operands::B => cpu.b,
+        Operands::C => cpu.c,
+        Operands::D => cpu.d,
+        Operands::E => cpu.e,
+        Operands::H => cpu.h,
+        Operands::L => cpu.l,
+        _ => panic!(),
+    };
+
+    //NOTE: Because rust perform LSR on unsigned variable
+    //So I have to add msb back manually to make it ASR
+    let msb = (src >> 7) & 1;
+    let lsb = src & 1;
+    let res = (src >> 1) | (msb << 7);
+
+    cpu.set(Z, res == 0); 
+    cpu.set(N, false);
+    cpu.set(H, false);
+    cpu.set(C, lsb == 1);
+
+    let dest: &mut u8 = match operand {
+        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+        Operands::A => &mut cpu.a,
+        Operands::B => &mut cpu.b,
+        Operands::C => &mut cpu.c,
+        Operands::D => &mut cpu.d,
+        Operands::E => &mut cpu.e,
+        Operands::H => &mut cpu.h,
+        Operands::L => &mut cpu.l,
+        _ => panic!(),
+    };
+
+    *dest = res;
+}
+
+pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) { 
+
+    let src: u8 = match operand {
+        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::A => cpu.a,
+        Operands::B => cpu.b,
+        Operands::C => cpu.c,
+        Operands::D => cpu.d,
+        Operands::E => cpu.e,
+        Operands::H => cpu.h,
+        Operands::L => cpu.l,
+        _ => panic!(),
+    };
+
+    let lsb = src & 1;
+    let res = src >> 1;
+
+    cpu.set(Z, res == 0); 
+    cpu.set(N, false);
+    cpu.set(H, false);
+    cpu.set(C, lsb == 1);
+
+    let dest: &mut u8 = match operand {
+        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+        Operands::A => &mut cpu.a,
+        Operands::B => &mut cpu.b,
+        Operands::C => &mut cpu.c,
+        Operands::D => &mut cpu.d,
+        Operands::E => &mut cpu.e,
+        Operands::H => &mut cpu.h,
+        Operands::L => &mut cpu.l,
+        _ => panic!(),
+    };
+
+    *dest = res;
 }
