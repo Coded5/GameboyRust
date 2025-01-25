@@ -1,0 +1,103 @@
+use std::io;
+
+use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
+use ratatui::{
+    buffer::Buffer, layout::{Constraint, Direction, Layout, Rect}, style::Stylize, symbols::border, text::Line, widgets::{Block, Paragraph, Widget}, DefaultTerminal, Frame
+};
+
+use super::widgets::{instructions_widget::InstructionWidget, memory_widget::MemoryWidget, registers_widget::RegistersWidget, stacks_widget::StackWidget};
+
+#[derive(Debug)]
+pub struct EmuDebugger {
+    exit: bool, 
+}
+
+impl EmuDebugger {
+
+    pub fn new() -> Self {
+        EmuDebugger {
+            exit: false
+        }
+    }
+
+    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        while !self.exit {
+            terminal.draw(|frame| self.draw(frame))?;
+            self.handle_events()?;
+        }
+        Ok(())
+    }
+
+    fn draw(&self, frame: &mut Frame) {
+        let top_bottom_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Percentage(50),
+                Constraint::Percentage(50)
+            ])
+            .split(frame.area());
+
+        let top_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Percentage(75),
+                Constraint::Percentage(25),
+            ])
+            .split(top_bottom_layout[0]);
+ 
+        let bottom_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .split(top_bottom_layout[1]);
+
+        frame.render_widget(MemoryWidget, top_layout[0]);
+        frame.render_widget(InstructionWidget, top_layout[1]);
+
+        frame.render_widget(StackWidget, bottom_layout[0]);
+        frame.render_widget(RegistersWidget, bottom_layout[1]);
+
+    }
+
+    fn handle_events(&mut self) -> io::Result<()> {
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                self.handle_key_event(key_event);
+            },
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_key_event(&mut self, key_event: KeyEvent) {
+        self.exit = true;
+    }
+
+}
+
+impl Default for EmuDebugger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Widget for &EmuDebugger {
+
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let title = Line::from(" Memory ".bold());
+        
+        let block = Block::bordered()
+            .title(title.centered())
+            .border_set(border::THICK)
+            .blue();
+
+        Paragraph::new(Line::from(" Hello World ".green().bold()))
+            .centered()
+            .block(block)
+            .render(area, buf);
+
+    }
+
+}
