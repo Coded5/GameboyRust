@@ -8,3 +8,5 @@ pub mod alu16;
 pub mod rotates;
 pub mod bits;
 pub mod jumps;
+pub mod stack;
+pub mod misc;

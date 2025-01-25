@@ -1,4 +1,4 @@
-use super::{instructions::{opcode::{self, Opcode}, opcode_table::{get_opcode, get_prefixed_opcode}}, memory::Memory};
+use super::{instructions::{opcode::Opcode, opcode_table::{get_opcode, get_prefixed_opcode}}, memory::Memory};
 
 pub const Z: u8 = 7;
 pub const N: u8 = 6;
@@ -155,4 +155,10 @@ impl Cpu {
     pub fn set_de(&mut self, val: u16) { self.d = ((val >> 8) & 0xff) as u8; self.e = (val & 0xff) as u8; }
     pub fn set_hl(&mut self, val: u16) { self.e = ((val >> 8) & 0xff) as u8; self.l = (val & 0xff) as u8; }
 
+}
+
+impl Default for Cpu {
+    fn default() -> Self {
+        Self::new()
+    }
 }

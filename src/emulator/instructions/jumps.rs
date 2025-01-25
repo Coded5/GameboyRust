@@ -49,3 +49,7 @@ pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
     }
 
 }
+
+pub fn call() {
+
+}
