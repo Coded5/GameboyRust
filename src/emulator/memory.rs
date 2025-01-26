@@ -2,6 +2,7 @@ use std::fs::{self, File};
 use std::io;
 use std::io::Read;
 
+#[derive(Debug)]
 pub struct Memory { 
     memory: [u8; 0x10000]
 }

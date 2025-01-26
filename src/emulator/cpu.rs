@@ -5,6 +5,7 @@ pub const N: u8 = 6;
 pub const H: u8 = 5;
 pub const C: u8 = 4;
 
+#[derive(Debug)]
 pub struct Cpu {
     pub a: u8,
     pub f: u8,

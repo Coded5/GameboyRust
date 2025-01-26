@@ -1,36 +1,35 @@
 use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect}, style::Stylize, symbols::border, widgets::{Block, Paragraph, Widget}};
 
-#[derive(Debug, Default)]
-pub struct RegistersWidget {
-    a: u8,
-    f: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    sp: u16,
-    pc: u16,
+use crate::emulator::cpu::Cpu;
+
+#[derive(Debug)]
+pub struct RegistersWidget<'a> {
+    cpu: &'a Cpu,
 }
 
-impl RegistersWidget {
+impl RegistersWidget<'_> {
+
+    pub fn new(cpu: &Cpu) -> RegistersWidget<'_> {
+        RegistersWidget {
+            cpu
+        }
+    }
 
     pub fn format_registers(&self) -> String {
         format!("
- A  : {:02X} 
- B C: {:02X} {:02X}
+ A  : {:02X}    PC : {:04X}
+ B C: {:02X} {:02X} SP : {:04X}
  D E: {:02X} {:02X}
  H L: {:02X} {:02X}
  F  : {:04b}
       ZNHC
-            ", self.a, self.b, self.c, self.d, self.e, self.h, self.l, self.f >> 4)
+            ", self.cpu.a, self.cpu.pc, self.cpu.b, self.cpu.c, self.cpu.sp, self.cpu.d, self.cpu.e, self.cpu.h, self.cpu.l, self.cpu.f >> 4)
 
     }
 
 }
 
-impl Widget for RegistersWidget {
+impl Widget for RegistersWidget<'_> {
 
     fn render(self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::default()
@@ -66,22 +65,3 @@ impl Widget for RegistersWidget {
     }
 
 }
-
-// impl Default for RegistersWidget {
-//
-//     fn default() -> RegistersWidget {
-//         RegistersWidget {
-//             a: 0,
-//             f: 0,
-//             b: 0,
-//             c: 0,
-//             d: 0,
-//             e: 0,
-//             h: 0,
-//             l: 0,
-//             sp: 0,
-//             pc: 0,
-//         }
-//     }
-//
-// }

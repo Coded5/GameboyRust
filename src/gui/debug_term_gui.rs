@@ -2,20 +2,40 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
-    buffer::Buffer, layout::{Constraint, Direction, Layout, Rect}, style::Stylize, symbols::border, text::Line, widgets::{Block, Paragraph, Widget}, DefaultTerminal, Frame
+    buffer::Buffer,
+    layout::{
+        Constraint,
+        Direction,
+        Layout,
+        Rect
+    }, 
+    style::Stylize, 
+    symbols::border,
+    text::Line,
+    widgets::{
+        Block,
+        Paragraph,
+        Widget
+    },
+    DefaultTerminal,
+    Frame
 };
+
+use crate::emulator::gameboy::Gameboy;
 
 use super::widgets::{instructions_widget::InstructionWidget, memory_widget::MemoryWidget, registers_widget::RegistersWidget, stacks_widget::StackWidget};
 
 #[derive(Debug)]
-pub struct EmuDebugger {
+pub struct EmuDebugger<'a> {
+    gb: &'a mut Gameboy, 
     exit: bool, 
 }
 
-impl EmuDebugger {
+impl EmuDebugger<'_> {
 
-    pub fn new() -> Self {
+    pub fn new(gb: &mut Gameboy) -> EmuDebugger<'_> {
         EmuDebugger {
+            gb,
             exit: false
         }
     }
@@ -53,11 +73,11 @@ impl EmuDebugger {
             ])
             .split(top_bottom_layout[1]);
 
-        frame.render_widget(MemoryWidget::default(), top_layout[0]);
+        frame.render_widget(MemoryWidget::new(&self.gb.memory), top_layout[0]);
         frame.render_widget(InstructionWidget, top_layout[1]);
 
         frame.render_widget(StackWidget, bottom_layout[0]);
-        frame.render_widget(RegistersWidget::default(), bottom_layout[1]);
+        frame.render_widget(RegistersWidget::new(&self.gb.cpu), bottom_layout[1]);
 
     }
 
@@ -75,31 +95,6 @@ impl EmuDebugger {
         if key_event.code == KeyCode::Esc {
             self.exit = true;
         }
-    }
-
-}
-
-impl Default for EmuDebugger {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Widget for &EmuDebugger {
-
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(" Memory ".bold());
-        
-        let block = Block::bordered()
-            .title(title.centered())
-            .border_set(border::THICK)
-            .blue();
-
-        Paragraph::new(Line::from(" Hello World ".green().bold()))
-            .centered()
-            .block(block)
-            .render(area, buf);
-
     }
 
 }

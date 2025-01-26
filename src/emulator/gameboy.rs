@@ -1,5 +1,6 @@
 use super::{cpu::Cpu, memory::Memory};
 
+#[derive(Debug)]
 pub struct Gameboy {
         
     pub cpu: Cpu,
