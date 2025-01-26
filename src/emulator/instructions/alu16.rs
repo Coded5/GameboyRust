@@ -32,7 +32,7 @@ pub fn add(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands, operand2: Op
 
 }
 
-pub fn inc16(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
+pub fn inc(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
 
     let rhs = match operand1 {
         Operands::BC => cpu.bc(),
@@ -51,7 +51,7 @@ pub fn inc16(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
     };
 }
 
-pub fn dec16(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
+pub fn dec(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
 
     let rhs = match operand1 {
         Operands::BC => cpu.bc(),

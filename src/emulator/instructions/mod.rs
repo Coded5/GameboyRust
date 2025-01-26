@@ -1,5 +1,6 @@
 pub mod opcode;
 pub mod operand;
+pub mod inst_group;
 pub mod opcode_table;
 
 pub mod loads;

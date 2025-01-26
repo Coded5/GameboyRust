@@ -7,7 +7,7 @@ impl Widget for InstructionWidget {
 
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered()
-            .title("Instruction! !".bold())
+            .title("Instruction".bold())
             .border_set(border::THICK)
             .blue();
 

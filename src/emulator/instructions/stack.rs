@@ -62,6 +62,7 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::JR_NZ => !cpu.z(),
         Operands::JR_C =>   cpu.c(),
         Operands::JR_NC => !cpu.c(),
+        Operands::U16 =>    true,
         _ => panic!(),
     };
 
@@ -101,7 +102,7 @@ pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::JR_NZ => !cpu.z(),
         Operands::JR_C =>   cpu.c(),
         Operands::JR_NC => !cpu.c(),
-        _ => panic!(),
+        _ => true,
     };
 
     if (!condition) {

@@ -1,6 +1,6 @@
 use std::io;
 
-use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer, layout::{Constraint, Direction, Layout, Rect}, style::Stylize, symbols::border, text::Line, widgets::{Block, Paragraph, Widget}, DefaultTerminal, Frame
 };
@@ -32,8 +32,8 @@ impl EmuDebugger {
         let top_bottom_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
-                Constraint::Percentage(50),
-                Constraint::Percentage(50)
+                Constraint::Percentage(60),
+                Constraint::Percentage(40)
             ])
             .split(frame.area());
 
@@ -53,11 +53,11 @@ impl EmuDebugger {
             ])
             .split(top_bottom_layout[1]);
 
-        frame.render_widget(MemoryWidget, top_layout[0]);
+        frame.render_widget(MemoryWidget::default(), top_layout[0]);
         frame.render_widget(InstructionWidget, top_layout[1]);
 
         frame.render_widget(StackWidget, bottom_layout[0]);
-        frame.render_widget(RegistersWidget, bottom_layout[1]);
+        frame.render_widget(RegistersWidget::default(), bottom_layout[1]);
 
     }
 
@@ -72,7 +72,9 @@ impl EmuDebugger {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent) {
-        self.exit = true;
+        if key_event.code == KeyCode::Esc {
+            self.exit = true;
+        }
     }
 
 }

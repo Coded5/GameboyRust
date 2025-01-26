@@ -1,5 +1,7 @@
 #[allow(non_camel_case_types)]
 pub enum Operands {
+    NONE,
+
     //R8
     A, F, B, C, D, E, H, L,
 
@@ -81,11 +83,13 @@ impl Operands {
             Operands::I8 => 1,
             Operands::U16 => 2,
             Operands::I(_) => 1,
+            Operands::NONE => 0
         }
     }
 
     pub fn get_str_format(&self, byte: u8, short: u16) -> String {
         match *self {
+            Operands::NONE => String::new(),
             Operands::A => String::from("A"),
             Operands::F => String::from("F"),
             Operands::B => String::from("B"),

@@ -5,7 +5,6 @@ pub const N: u8 = 6;
 pub const H: u8 = 5;
 pub const C: u8 = 4;
 
-#[allow(dead_code)]
 pub struct Cpu {
     pub a: u8,
     pub f: u8,
@@ -19,7 +18,6 @@ pub struct Cpu {
     pub pc: u16,
 }
 
-#[allow(dead_code)]
 impl Cpu {
 
     pub fn new() -> Self {
@@ -49,53 +47,7 @@ impl Cpu {
         (hi << 8) | lo
     }
 
-    pub fn run_rom(&self, memory: &mut Memory, rom_size: usize) {
-        let mut current_address: u16 = 0;
-
-        while (current_address < rom_size as u16) {
-            print!("{:04x} ", current_address);
-            let mut all_bytes: Vec<u8> = Vec::new();
-
-            let opcode_byte: u8 = memory.get_byte(current_address);
-
-            //TODO: Temporary
-            all_bytes.push(opcode_byte);
-
-            let opcode = if (opcode_byte == 0xCB) {
-                current_address += 1;
-                let cb_opcode_byte: u8 = memory.get_byte(current_address);
-
-                all_bytes.push(cb_opcode_byte);
-                get_prefixed_opcode(cb_opcode_byte)
-            } else {
-                match get_opcode(opcode_byte) {
-                    Ok(opcode) => opcode,
-                    _ => {
-                        current_address += 1;
-                        continue;
-                    }
-                }
-            };
-
-            let mut opcode_data: Vec<u8> = vec![0u8; opcode.length - 1];
-
-            (0..opcode.length - 1).for_each(|i| {
-                current_address += 1;
-                opcode_data[i] = memory.get_byte(current_address);
-
-                //TODO: Temporary
-                all_bytes.push(opcode_data[i]);
-            });
-
-            print!("{:02X?} ", all_bytes);
-            Self::disassemble_opcode(opcode, opcode_data);
-
-            current_address += 1;
-
-        }
-    }
-
-    fn disassemble_opcode(opcode: Opcode, data: Vec<u8>) {
+    pub fn disassemble_opcode(opcode: Opcode, data: Vec<u8>) -> String {
         let mut line = String::new();
         line.push_str(&opcode.mnemonic);
 
@@ -125,11 +77,25 @@ impl Cpu {
         }
 
         println!("{}", line);
+        line
     }
 
-    //TODO: implement this
-    fn execute(&mut self, opcode: Opcode, memory: &mut Memory) -> i32 {
-        unimplemented!();
+    pub fn run(&mut self, memory: &mut Memory) {
+        //Fetch
+        let opcode_byte = memory.get_byte(self.pc);
+
+        //Decode
+        let opcode = if (opcode_byte == 0xCB) {
+            self.pc += 1;
+            let cb_opcode_byte = memory.get_byte(self.pc);
+
+            get_prefixed_opcode(cb_opcode_byte)
+        }
+        else {
+            get_opcode(opcode_byte).unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
+        };
+
+        //Execute
     }
 
     pub fn z(&self) -> bool { ((self.f >> 7) & 1) == 1 }

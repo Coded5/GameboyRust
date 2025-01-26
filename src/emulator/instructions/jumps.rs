@@ -17,7 +17,7 @@ pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2:
         Operands::JR_NZ => !cpu.z(),
         Operands::JR_C =>   cpu.c(),
         Operands::JR_NC => !cpu.c(),
-        _ => panic!(),
+        _ => true,
     };
 
     if (condition) {
@@ -41,15 +41,11 @@ pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
         Operands::JR_NZ => !cpu.z(),
         Operands::JR_C =>   cpu.c(),
         Operands::JR_NC => !cpu.c(),
-        _ => panic!(),
+        _ => true,
     };
 
     if (condition) {
         jr(cpu, memory);
     }
-
-}
-
-pub fn call() {
 
 }

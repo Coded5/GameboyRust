@@ -8,7 +8,7 @@ impl Widget for StackWidget {
 
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered()
-            .title("Stack ! !".bold())
+            .title("Stack".bold())
             .border_set(border::THICK)
             .blue();
 
