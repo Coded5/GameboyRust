@@ -77,7 +77,7 @@ impl Cpu {
             line.push_str(op2.get_str_format(byte, short).as_str());
         }
 
-        println!("{}", line);
+        // println!("{}", line);
         line
     }
 

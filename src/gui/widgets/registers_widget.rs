@@ -32,23 +32,8 @@ impl RegistersWidget<'_> {
 impl Widget for RegistersWidget<'_> {
 
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![
-                Constraint::Min(5),
-                Constraint::Min(5),
-            ])
-            .split(area);
-
-
-
         let block_r8 = Block::bordered()
             .title("Register8".bold())
-            .border_set(border::THICK)
-            .blue();
-
-        let block_r16 = Block::bordered()
-            .title("Register16".bold())
             .border_set(border::THICK)
             .blue();
 
@@ -56,12 +41,8 @@ impl Widget for RegistersWidget<'_> {
             self.format_registers()
         )
             .block(block_r8)
-            .render(layout[0], buf);
+            .render(area, buf);
  
-        Paragraph::new("Register goes here!")
-            .centered()
-            .block(block_r16)
-            .render(layout[1], buf);
     }
 
 }

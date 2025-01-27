@@ -1,86 +1,104 @@
-use ratatui::{buffer::Buffer, layout::Rect, style::{Color, Modifier, Style, Stylize}, symbols::border, text::{Line, Span, Text}, widgets::{Block, Padding, Paragraph, Widget}};
+use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::{buffer::Buffer, layout::{Constraint, Layout, Rect}, style::{Color, Style}, text::Text, widgets::{Cell, List, ListItem, ListState, Row, StatefulWidget, Table, TableState}};
 
 use crate::emulator::memory::Memory;
 
 #[derive(Debug)]
-pub struct MemoryWidget<'a> {
-    memory: &'a Memory 
+pub struct MemoryWidget {
+    cstate: ListState,
+    state: TableState,
 }
 
-impl MemoryWidget<'_> {
+impl MemoryWidget {
 
-    pub fn new(memory: &Memory) -> MemoryWidget<'_> {
+    pub fn new() -> MemoryWidget {
+        let mut state = TableState::default();
+        let mut cstate = ListState::default();
+        state.select_first();
+        cstate.select(Some(1));
+        
         MemoryWidget {
-            memory
+            cstate,
+            state,
         }
     }
 
-    pub fn get_memory_str(&self) -> Text<'_> {
-        let mut lines = Vec::new();
+    fn render_table(&mut self, area: Rect, buf: &mut Buffer, state: &Memory) {
+        let rows = (0..0xFFF0_i32).step_by(0x10)
+            .map(|addr| {
+                (addr-1..addr+0x10)
+                    .map(|offset| {
+                        Cell::from(
+                            Text::from(format!("{:02X}", state.get_byte(offset as u16)))
+                        )
+                    })
+                    .collect::<Row>()
+                    .height(1)
+            });
 
-        let head = Span::styled("ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F",
-            Style::default()
-            .bg(Color::Red)
-            .add_modifier(Modifier::BOLD)
-        );
+        let mut col_items = vec![ListItem::from("")];
 
-        lines.push(Line::from(head));
+        let numbered = (0..0xFFF0).step_by(0x10).map(|x| {
+            ListItem::from(format!("{:04X}", x))
+        });
 
-        //TODO: Make it highlight PC and CURSOR
-        for i in (0..0xFF).step_by(0x10) {
-            let line = Line::from(vec![
-                Span::styled(format!("{:04X}", i), Style::default().bg(Color::Red)),
-                Span::styled(" 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", Style::default())
-            ]);
+        col_items.extend(numbered);
 
-            lines.push(line);
-        }
+        let headers = (0..16).map(|x| {
+            Cell::from(Text::from(format!("{:02X}", x)))
+        }).collect::<Row>().height(1);
 
+        let list = List::new(col_items)
+            .highlight_style(Style::default().bg(Color::Red));
 
-        Text::from(lines)
+        let table = Table::new(rows, [Constraint::Max(2); 16])
+            .header(headers)
+            .row_highlight_style(Style::default().bg(Color::Red))
+            .column_highlight_style(Style::default().bg(Color::Red));
+
+        let [list_layout, table_layout] = Layout::horizontal([
+            Constraint::Length(5),
+            Constraint::Fill(1),
+        ])
+        .areas(area);
+
+        StatefulWidget::render(list, list_layout, buf, &mut self.cstate);
+        StatefulWidget::render(table, table_layout, buf, &mut self.state);
     }
 
-    pub fn get_formatted_memory(&self) -> Text<'_> {
-        let mut lines = Vec::new();
-
-        let head = Span::styled("ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F",
-            Style::default()
-            .bg(Color::Red)
-            .add_modifier(Modifier::BOLD)
-        );
-
-        lines.push(Line::from(head));
-
-        for addr in (0..=0xFF).step_by(0x10) {
-            let mut spans = vec![
-                Span::styled(format!("{:04X}", addr), Style::default().bg(Color::Red)).add_modifier(Modifier::BOLD),
-            ];
-
-            for i in (0..0x10) {
-                spans.push(
-                    Span::from(format!(" {:02X}", self.memory.get_byte(addr + i)))
-                );
+    pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('k') => {
+                self.state.select_previous();
+                self.cstate.select_previous();
+            },
+            KeyCode::Char('j') => {
+                self.state.select_next();
+                self.cstate.select_next();
+            },
+            KeyCode::Char('l') => {
+                self.state.select_next_column();
+            },
+            KeyCode::Char('h') => {
+                self.state.select_previous_column();
             }
-
-            lines.push(Line::from(spans));
+            _ => (),
         }
-
-        Text::from(lines)
     }
 
 }
 
-impl Widget for MemoryWidget<'_> {
+impl Default for MemoryWidget {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let block = Block::bordered()
-            .title("Memory".bold())
-            .border_set(border::THICK)
-            .padding(Padding::horizontal(1));
+impl StatefulWidget for &mut MemoryWidget {
+    type State = Memory;
 
-        Paragraph::new(self.get_formatted_memory())
-            .block(block)
-            .render(area, buf);
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        self.render_table(area, buf, state);
     }
 
 }

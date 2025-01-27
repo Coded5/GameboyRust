@@ -300,7 +300,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0xdf => Ok(Opcode::opcode1(BRANCH, "RST", 0xdf, 1, vec![16], H18)),
         0xe0 => Ok(Opcode::opcode2(LD8, "LDH", 0xe0, 2, vec![12], AddrFF00_C, A)),
         0xe1 => Ok(Opcode::opcode1(LD16, "POP", 0xe1, 1, vec![12], HL)),
-        0xe2 => Ok(Opcode::opcode2(LD8, "LD", 0xe2, 1, vec![8], (C), A)),
+        0xe2 => Ok(Opcode::opcode2(LD8, "LD", 0xe2, 1, vec![8], AddrFF00_C, A)),
         0xe5 => Ok(Opcode::opcode1(LD16, "PUSH", 0xe5, 1, vec![16], HL)),
         0xe6 => Ok(Opcode::opcode1(ALU8, "AND", 0xe6, 2, vec![8], U8)),
         0xe7 => Ok(Opcode::opcode1(BRANCH, "RST", 0xe7, 1, vec![16], H20)),
@@ -311,7 +311,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0xef => Ok(Opcode::opcode1(BRANCH, "RST", 0xef, 1, vec![16], H28)),
         0xf0 => Ok(Opcode::opcode2(LD8, "LDH", 0xf0, 2, vec![12], A, AddrFF00_C)),
         0xf1 => Ok(Opcode::opcode1(LD16, "POP", 0xf1, 1, vec![12], AF)),
-        0xf2 => Ok(Opcode::opcode2(LD8, "LD", 0xf2, 1, vec![8], A, (C))),
+        0xf2 => Ok(Opcode::opcode2(LD8, "LD", 0xf2, 1, vec![8], A, AddrFF00_C)),
         0xf3 => Ok(Opcode::opcode0(MISC, "DI", 0xf3, 1, vec![4])),
         0xf5 => Ok(Opcode::opcode1(LD16, "PUSH", 0xf5, 1, vec![16], AF)),
         0xf6 => Ok(Opcode::opcode1(ALU8, "OR", 0xf6, 2, vec![8], U8)),
@@ -322,7 +322,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0xfb => Ok(Opcode::opcode0(MISC, "EI", 0xfb, 1, vec![4])),
         0xfe => Ok(Opcode::opcode1(ALU8, "CP", 0xfe, 2, vec![8], U8)),
         0xff => Ok(Opcode::opcode1(BRANCH, "RST", 0xff, 1, vec![16], H38)),
-        _ => panic!(),
+        _ => Err(()),
     }
 
 }

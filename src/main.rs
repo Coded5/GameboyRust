@@ -1,6 +1,6 @@
 use std::io;
 
-use gameboy::{emulator::gameboy::Gameboy, gui::debug_term_gui::EmuDebugger};
+use gameboy::{emulator::gameboy::Gameboy, gui::{debug_term_gui::EmuDebugger, disassembler::disassemble_rom}};
 
 fn main() -> io::Result<()> {
     let mut gb: Gameboy = Gameboy::new();
