@@ -233,7 +233,7 @@ pub fn inc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         _ => panic!(),
     };
 
-    *lhs = rhs;
+    *lhs = res;
     
 }
 
@@ -269,6 +269,6 @@ pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         _ => panic!(),
     };
 
-    *lhs = rhs;
+    *lhs = res;
     
 }

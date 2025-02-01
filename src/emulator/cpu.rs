@@ -1,4 +1,4 @@
-use super::{instructions::{opcode::Opcode, opcode_table::{get_opcode, get_prefixed_opcode}}, memory::Memory};
+use super::{instructions::{opcode::Opcode, opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode}}, memory::Memory};
 
 pub const Z: u8 = 7;
 pub const N: u8 = 6;
@@ -38,12 +38,12 @@ impl Cpu {
 
     pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
         self.pc += 1;
-        memory.get_byte(self.pc - 1)
+        memory.get_byte(self.pc)
     }
 
     pub fn next_short(&mut self, memory: &mut Memory) -> u16 {
-        let hi = self.next_byte(memory) as u16;
         let lo = self.next_byte(memory) as u16;
+        let hi = self.next_byte(memory) as u16;
 
         (hi << 8) | lo
     }
@@ -97,6 +97,8 @@ impl Cpu {
         };
 
         //Execute
+        execute_opcode(self, memory, opcode);
+        self.pc += 1;
     }
 
     pub fn z(&self) -> bool { ((self.f >> 7) & 1) == 1 }
@@ -120,7 +122,7 @@ impl Cpu {
     pub fn set_af(&mut self, val: u16) { self.a = ((val >> 8) & 0xff) as u8; self.f = (val & 0xff) as u8; }
     pub fn set_bc(&mut self, val: u16) { self.b = ((val >> 8) & 0xff) as u8; self.c = (val & 0xff) as u8; }
     pub fn set_de(&mut self, val: u16) { self.d = ((val >> 8) & 0xff) as u8; self.e = (val & 0xff) as u8; }
-    pub fn set_hl(&mut self, val: u16) { self.e = ((val >> 8) & 0xff) as u8; self.l = (val & 0xff) as u8; }
+    pub fn set_hl(&mut self, val: u16) { self.h = ((val >> 8) & 0xff) as u8; self.l = (val & 0xff) as u8; }
 
 }
 

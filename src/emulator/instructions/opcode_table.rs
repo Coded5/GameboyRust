@@ -1,7 +1,9 @@
 use crate::emulator::cpu::Cpu;
 use crate::emulator::memory::Memory;
 
-use super::{alu16, jumps, rotates, stack};
+use super::rotates::rlc;
+use super::stack::{pop, push};
+use super::{alu16, bits, jumps, misc, rotates, stack};
 use super::alu8::{self, add};
 use super::loads::{load8, load16};
 use super::opcode::Opcode;
@@ -14,7 +16,14 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
 
     match opcode.group {
         LD8 => load8(cpu, memory, operand1, operand2),
-        LD16 => load16(cpu, memory, operand1, operand2),
+        LD16 => {
+            match opcode.mnemonic.as_str() {
+                "LD" => load16(cpu, memory, operand1, operand2),
+                "PUSH" => push(cpu, memory, operand1),
+                "POP" =>pop(cpu, memory, operand1),
+                _ => panic!("Invalid Instruction {}", opcode.mnemonic)
+            }
+        }
         ALU8 => {
             match opcode.mnemonic.as_str() {
                 "ADD" => alu8::add(cpu, memory, operand1, operand2),
@@ -44,6 +53,17 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
                 "RRA"  => rotates::rra(cpu),
                 "RLCA" => rotates::rlca(cpu),
                 "RRCA" => rotates::rrca(cpu),
+                "RRC"  => rotates::rrc(cpu, memory, operand1),
+                "SWAP" => misc::swap(cpu, memory, operand1),
+                "RR"   => rotates::rr(cpu, memory, operand1),
+                "RLC"  => rotates::rlc(cpu, memory, operand1),
+                "RL"   => rotates::rl(cpu, memory, operand1),
+                "BIT"  => bits::bit(cpu, memory, operand1, operand2),
+                "SET"  => bits::set(cpu, memory, operand1, operand2),
+                "SLA"  => rotates::sla(cpu, memory, operand1),
+                "SRL"  => rotates::srl(cpu, memory, operand1),
+                "RES"  => bits::res(cpu, memory, operand1, operand2),
+                "SRA" => rotates::sra(cpu, memory, operand1),
                 _ => panic!("Invalid instruction {}", opcode.mnemonic),
             }
         },
@@ -62,11 +82,11 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
         },
         MISC => {
             match opcode.mnemonic.as_str() {
-                "DI" => unimplemented!(),
+                // "DI" => unimplemented!(),
                 "NOP" => (),
-                "STOP" => unimplemented!(),
-                "HALT" => unimplemented!(),
-                "EI"   => unimplemented!(),
+                // "STOP" => unimplemented!(),
+                // "HALT" => unimplemented!(),
+                // "EI"   => unimplemented!(),
                 _ => panic!("Invalid Instruction {}", opcode.mnemonic),
             }
         },
@@ -96,7 +116,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0x0f => Ok(Opcode::opcode0(RSB8, "RRCA", 0x0f, 1, vec![4])),
         0x10 => Ok(Opcode::opcode0(MISC, "STOP", 0x10, 1, vec![4])),
         0x11 => Ok(Opcode::opcode2(LD16, "LD", 0x11, 3, vec![12], DE, U16)),
-        0x12 => Ok(Opcode::opcode2(LD8, "LD", 0x12, 1, vec![8], (DE), A)),
+        0x12 => Ok(Opcode::opcode2(LD8, "LD", 0x12, 1, vec![8], AddrDE, A)),
         0x13 => Ok(Opcode::opcode1(ALU16, "INC", 0x13, 1, vec![8], DE)),
         0x14 => Ok(Opcode::opcode1(ALU8, "INC", 0x14, 1, vec![4], D)),
         0x15 => Ok(Opcode::opcode1(ALU8, "DEC", 0x15, 1, vec![4], D)),
@@ -104,7 +124,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0x17 => Ok(Opcode::opcode0(RSB8, "RLA", 0x17, 1, vec![4])),
         0x18 => Ok(Opcode::opcode1(BRANCH, "JR", 0x18, 2, vec![12], I8)),
         0x19 => Ok(Opcode::opcode2(ALU16, "ADD", 0x19, 1, vec![8], HL, DE)),
-        0x1a => Ok(Opcode::opcode2(LD8, "LD", 0x1a, 1, vec![8], A, (DE))),
+        0x1a => Ok(Opcode::opcode2(LD8, "LD", 0x1a, 1, vec![8], A, AddrDE)),
         0x1b => Ok(Opcode::opcode1(ALU16, "DEC", 0x1b, 1, vec![8], DE)),
         0x1c => Ok(Opcode::opcode1(ALU8, "INC", 0x1c, 1, vec![4], E)),
         0x1d => Ok(Opcode::opcode1(ALU8, "DEC", 0x1d, 1, vec![4], E)),
@@ -298,7 +318,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0xdc => Ok(Opcode::opcode2(BRANCH, "CALL", 0xdc, 3, vec![12, 24], C, U16)),
         0xde => Ok(Opcode::opcode2(ALU8, "SBC", 0xde, 2, vec![8], A, U8)),
         0xdf => Ok(Opcode::opcode1(BRANCH, "RST", 0xdf, 1, vec![16], H18)),
-        0xe0 => Ok(Opcode::opcode2(LD8, "LDH", 0xe0, 2, vec![12], AddrFF00_C, A)),
+        0xe0 => Ok(Opcode::opcode2(LD8, "LD", 0xe0, 2, vec![12], AddrFF00_C, A)),
         0xe1 => Ok(Opcode::opcode1(LD16, "POP", 0xe1, 1, vec![12], HL)),
         0xe2 => Ok(Opcode::opcode2(LD8, "LD", 0xe2, 1, vec![8], AddrFF00_C, A)),
         0xe5 => Ok(Opcode::opcode1(LD16, "PUSH", 0xe5, 1, vec![16], HL)),
@@ -309,7 +329,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0xea => Ok(Opcode::opcode2(LD8, "LD", 0xea, 3, vec![16], AddrU16, A)),
         0xee => Ok(Opcode::opcode1(ALU8, "XOR", 0xee, 2, vec![8], U8)),
         0xef => Ok(Opcode::opcode1(BRANCH, "RST", 0xef, 1, vec![16], H28)),
-        0xf0 => Ok(Opcode::opcode2(LD8, "LDH", 0xf0, 2, vec![12], A, AddrFF00_C)),
+        0xf0 => Ok(Opcode::opcode2(LD8, "LD", 0xf0, 2, vec![12], A, AddrFF00_C)),
         0xf1 => Ok(Opcode::opcode1(LD16, "POP", 0xf1, 1, vec![12], AF)),
         0xf2 => Ok(Opcode::opcode2(LD8, "LD", 0xf2, 1, vec![8], A, AddrFF00_C)),
         0xf3 => Ok(Opcode::opcode0(MISC, "DI", 0xf3, 1, vec![4])),

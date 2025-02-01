@@ -4,7 +4,6 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     layout::{
         Constraint,
-        Direction,
         Layout
     }, 
     DefaultTerminal,
@@ -13,7 +12,7 @@ use ratatui::{
 
 use crate::emulator::gameboy::Gameboy;
 
-use super::widgets::{instructions_widget::InstructionWidget, memory_widget::{self, MemoryWidget}, registers_widget::RegistersWidget, stacks_widget::StackWidget};
+use super::widgets::{instructions_widget::InstructionWidget, memory_widget::{self, MemoryWidget, MemoryWidgetState}, registers_widget::RegistersWidget, stacks_widget::StackWidget};
 
 #[derive(Debug)]
 pub struct EmuDebugger<'a> {
@@ -29,6 +28,8 @@ impl EmuDebugger<'_> {
         let instructions_widget = InstructionWidget::new(&gb.memory);
         let memory_widget = MemoryWidget::new();
 
+        gb.cpu.run(&mut gb.memory);
+
         EmuDebugger {
             gb,
             instructions_widget,
@@ -39,6 +40,8 @@ impl EmuDebugger<'_> {
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
+            // self.gb.cpu.run(&mut self.gb.memory);
+
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
         }
@@ -55,7 +58,10 @@ impl EmuDebugger<'_> {
         .areas(frame.area());
 
 
-        frame.render_stateful_widget(&mut self.memory_widget, memory, &mut self.gb.memory);
+        let marked_address = vec![self.gb.cpu.pc];
+        let mut memory_state = MemoryWidgetState::new(&self.gb.memory, marked_address);
+
+        frame.render_stateful_widget(&mut self.memory_widget, memory, &mut memory_state);
         frame.render_widget(&mut self.instructions_widget, inst);
 
         frame.render_widget(StackWidget, stack);
@@ -80,12 +86,28 @@ impl EmuDebugger<'_> {
 
         self.memory_widget.handle_key_event(key_event);
 
-        // match key_event.code {
-        //     KeyCode::Char('q') | KeyCode::Esc => self.exit = true,
-        //     KeyCode::Char('j') => self.instructions_widget.state.select_next(),
-        //     KeyCode::Char('k') => self.instructions_widget.state.select_previous(),
-        //     _ => (),
-        // }
+        match key_event.code {
+            KeyCode::Char('q') | KeyCode::Esc => self.exit = true,
+            KeyCode::Char('n') => {
+                self.gb.cpu.run(&mut self.gb.memory);
+                self.instructions_widget.state.select_next();
+
+            },
+            KeyCode::Char('m') => {
+                for _ in 0..400 {
+                    self.gb.cpu.run(&mut self.gb.memory);
+                }
+            }
+            ,
+            KeyCode::Char('g') => {
+                while (!self.gb.cpu.z()) {
+                    self.gb.cpu.run(&mut self.gb.memory);
+                }
+            }
+            _ => (),
+        }
+
+        self.instructions_widget.update_selected_instruction(self.gb.cpu.pc); 
     }
 
 }

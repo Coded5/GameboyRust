@@ -33,7 +33,7 @@ pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
             memory.get_byte(addr)
         },
         Operands::U8 => cpu.next_byte(memory),
-        _ => panic!(),
+        _ => panic!("Invalid source : {:?}", operand2),
     };
 
     let des: &mut u8 = match operand1 {
@@ -96,7 +96,7 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
             val
         },
         Operands::SP => cpu.sp,
-        _ => panic!(),
+        _ => panic!("Invalid source : {:?}", operand2),
     };
 
     match operand1 {

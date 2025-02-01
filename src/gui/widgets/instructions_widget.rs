@@ -13,7 +13,6 @@ impl InstructionWidget {
     pub fn new(memory: &Memory) -> InstructionWidget {
         let mut state = ListState::default();
         state.select_first();
-        state.select_next();
 
         let instruction_list = disassemble_rom(memory);
 
@@ -45,6 +44,18 @@ impl InstructionWidget {
             );
 
         StatefulWidget::render(list, area, buf, &mut self.state);
+    }
+
+    pub fn update_selected_instruction(&mut self, pc: u16)  {
+
+        //TODO: Use binary search instead
+        //NOTE: Linear search will be slow but it good for now.
+        let mut current_index: usize = 0;
+        while (self.instruction_list[current_index].0 < pc) {
+            current_index += 1;
+        }
+
+        self.state.select(Some(current_index));
     }
 
 }

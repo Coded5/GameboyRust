@@ -27,9 +27,9 @@ pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2:
 }
 
 pub fn jr(cpu: &mut Cpu, memory: &mut Memory) {
-    let offset = cpu.next_byte(memory) as i16;
+    let offset = cpu.next_byte(memory) as i8;
 
-    let (res, _carry) = cpu.pc.overflowing_add_signed(offset);
+    let (res, _carry) = cpu.pc.overflowing_add_signed(offset as i16);
 
     cpu.pc = res;
 }
@@ -46,6 +46,10 @@ pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
 
     if (condition) {
         jr(cpu, memory);
+    }
+    else {
+        //TODO: For some reason when relative jump condition is not met cpu sp doesn't increment
+        cpu.pc += 2;
     }
 
 }
