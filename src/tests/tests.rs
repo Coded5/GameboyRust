@@ -9,11 +9,3 @@ fn create_memory_and_load_rom() {
         panic!("{}", e)
     }
 }
-
-#[test]
-fn test_for_test() {
-    assert_eq!(2, 2);
-    assert_eq!(2, 3);
-    assert_eq!(4, 4);
-    assert_eq!(2, 1);
-}

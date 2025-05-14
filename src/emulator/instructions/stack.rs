@@ -3,7 +3,6 @@ use crate::emulator::{cpu::Cpu, memory::Memory};
 use super::operand::Operands;
 
 pub fn push(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let src: u16 = match operand {
         Operands::AF => cpu.af(),
         Operands::BC => cpu.bc(),
@@ -16,13 +15,12 @@ pub fn push(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let hi: u8 = ((src >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = lo;
-    cpu.sp -= 1;
     *memory.get_mut_byte(cpu.sp) = hi;
+    cpu.sp -= 1;
+    *memory.get_mut_byte(cpu.sp) = lo;
 }
 
 pub fn pop(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let lo = memory.get_byte(cpu.sp) as u16;
     cpu.sp += 1;
     let hi = memory.get_byte(cpu.sp) as u16;
@@ -40,81 +38,76 @@ pub fn pop(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn call(cpu: &mut Cpu, memory: &mut Memory) {
-
     let address = cpu.pc;
     let lo_byte: u8 = (address & 0xFF) as u8;
     let hi_byte: u8 = ((address >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = lo_byte;
-    cpu.sp -= 1;
     *memory.get_mut_byte(cpu.sp) = hi_byte;
+    cpu.sp -= 1;
+    *memory.get_mut_byte(cpu.sp) = lo_byte;
 
     let new_address = cpu.next_short(memory);
     cpu.pc = new_address;
-
 }
 
-pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
+pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     let condition = match operand {
-        Operands::JR_Z =>   cpu.z(),
+        Operands::JR_Z => cpu.z(),
         Operands::JR_NZ => !cpu.z(),
-        Operands::JR_C =>   cpu.c(),
+        Operands::JR_C => cpu.c(),
         Operands::JR_NC => !cpu.c(),
-        Operands::U16 =>    true,
+        Operands::U16 => true,
         _ => panic!(),
     };
 
     if (!condition) {
-        return;
+        return false;
     }
- 
+
     let address = cpu.pc;
     let lo_byte: u8 = (address & 0xFF) as u8;
     let hi_byte: u8 = ((address >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = lo_byte;
-    cpu.sp -= 1;
     *memory.get_mut_byte(cpu.sp) = hi_byte;
+    cpu.sp -= 1;
+    *memory.get_mut_byte(cpu.sp) = lo_byte;
 
     let new_address = cpu.next_short(memory);
     cpu.pc = new_address;
 
+    true
 }
 
 pub fn ret(cpu: &mut Cpu, memory: &mut Memory) {
-
     let lo = memory.get_byte(cpu.sp) as u16;
     cpu.sp += 1;
     let hi = memory.get_byte(cpu.sp) as u16;
     cpu.sp += 1;
 
     cpu.pc = (hi << 8) | lo;
-
+    cpu.pc += 1;
 }
 
-pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
+pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     let condition = match operand {
-        Operands::JR_Z =>   cpu.z(),
+        Operands::JR_Z => cpu.z(),
         Operands::JR_NZ => !cpu.z(),
-        Operands::JR_C =>   cpu.c(),
+        Operands::JR_C => cpu.c(),
         Operands::JR_NC => !cpu.c(),
         _ => true,
     };
 
     if (!condition) {
-        return;
+        return false;
     }
 
     ret(cpu, memory);
-
+    true
 }
 
-pub fn rst(cpu: &mut Cpu, _memory: &mut Memory, operand: Operands) {
-
+pub fn rst(cpu: &mut Cpu, _memory: &mut Memory, operand: Operands) -> bool {
     let address = match operand {
         Operands::H28 => 0x28,
         Operands::H00 => 0x00,
@@ -128,5 +121,5 @@ pub fn rst(cpu: &mut Cpu, _memory: &mut Memory, operand: Operands) {
     };
 
     cpu.pc = address;
-
+    false
 }

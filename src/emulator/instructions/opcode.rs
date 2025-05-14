@@ -1,7 +1,5 @@
 use super::{inst_group::InstGroup, operand::Operands};
 
-//TODO: remove this
-#[allow(dead_code)]
 pub struct Opcode {
     pub opcode_byte: u8,
     pub length: usize,

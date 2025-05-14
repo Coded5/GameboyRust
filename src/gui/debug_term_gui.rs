@@ -12,11 +12,23 @@ use ratatui::{
 
 use crate::emulator::gameboy::Gameboy;
 
-use super::widgets::{instructions_widget::InstructionWidget, memory_widget::{self, MemoryWidget, MemoryWidgetState}, registers_widget::RegistersWidget, stacks_widget::StackWidget};
+use super::widgets::{
+    instructions_widget::InstructionWidget,
+    memory_widget::{
+        MemoryWidget,
+        MemoryWidgetState
+    },
+    registers_widget::RegistersWidget,
+    stacks_widget::{
+        StackWidget,
+        StackWidgetState
+    }
+};
 
 #[derive(Debug)]
 pub struct EmuDebugger<'a> {
     gb: &'a mut Gameboy,
+    stacks_widget: StackWidget,
     instructions_widget: InstructionWidget,
     memory_widget: MemoryWidget,
     exit: bool, 
@@ -27,11 +39,13 @@ impl EmuDebugger<'_> {
     pub fn new(gb: &mut Gameboy) -> EmuDebugger<'_> {
         let instructions_widget = InstructionWidget::new(&gb.memory);
         let memory_widget = MemoryWidget::new();
+        let stacks_widget = StackWidget::default();
 
         gb.cpu.run(&mut gb.memory);
 
         EmuDebugger {
             gb,
+            stacks_widget,
             instructions_widget,
             memory_widget,
             exit: false
@@ -60,11 +74,12 @@ impl EmuDebugger<'_> {
 
         let marked_address = vec![self.gb.cpu.pc];
         let mut memory_state = MemoryWidgetState::new(&self.gb.memory, marked_address);
+        let mut stack_state = StackWidgetState::new(self.gb.cpu.sp, &self.gb.memory);
 
         frame.render_stateful_widget(&mut self.memory_widget, memory, &mut memory_state);
         frame.render_widget(&mut self.instructions_widget, inst);
 
-        frame.render_widget(StackWidget, stack);
+        frame.render_stateful_widget(&mut self.stacks_widget, stack, &mut stack_state);
         frame.render_widget(RegistersWidget::new(&self.gb.cpu), reg);
 
     }

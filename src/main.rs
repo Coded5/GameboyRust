@@ -1,6 +1,9 @@
 use std::{env, io};
 
-use gameboy::{emulator::gameboy::Gameboy, gui::{debug_term_gui::EmuDebugger, disassembler::disassemble_rom}};
+use gameboy::{
+    emulator::gameboy::Gameboy,
+    gui::{debug_term_gui::EmuDebugger, disassembler::disassemble_rom},
+};
 
 fn main() -> io::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
@@ -13,3 +16,20 @@ fn main() -> io::Result<()> {
     ratatui::restore();
     app_result
 }
+
+//TODO: Debug TUI
+//  Stack list
+//  Memory marker
+//  Actually good stepping debug
+//  Unit test
+//
+//TODO: Fix all instruction issue
+//  KNOWN INSTRUCTION WITH ISSUE
+//  CALL
+//  PUSH
+//  POP
+//
+//TODO: Screen & PPU
+//  Use OpenGL(?)
+//TODO: Input handling
+//TODO: Audio

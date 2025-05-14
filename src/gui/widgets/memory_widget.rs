@@ -25,7 +25,7 @@ impl MemoryWidget {
 
     fn render_table(&mut self, area: Rect, buf: &mut Buffer, state: &mut MemoryWidgetState) {
 
-        let rows = (0..0xFFF0_i32).step_by(0x10)
+        let rows = (0..=0xFFFF_i32).step_by(0x10)
             .map(|addr| {
                 (addr..addr+0x10)
                     .map(|offset| {
@@ -45,7 +45,7 @@ impl MemoryWidget {
                     .height(1)
             });
 
-        let col_items = (0..0xFFF0).step_by(0x10).map(|x| {
+        let col_items = (0..0xFFFF).step_by(0x10).map(|x| {
             ListItem::from(format!("{:04X}", x))
         });
 
@@ -92,6 +92,10 @@ impl MemoryWidget {
             },
             KeyCode::Char('h') => {
                 self.state.select_previous_column();
+            },
+            KeyCode::Down => {
+                self.state.select_last();
+                self.cstate.select_last();
             }
             _ => (),
         }

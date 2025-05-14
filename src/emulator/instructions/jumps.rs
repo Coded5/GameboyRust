@@ -11,7 +11,7 @@ pub fn jphl(cpu: &mut Cpu, _memory: &mut Memory) {
     cpu.pc = cpu.hl();
 }
 
-pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2: Operands) {
+pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2: Operands) -> bool {
     let condition = match operand1 {
         Operands::JR_Z =>   cpu.z(),
         Operands::JR_NZ => !cpu.z(),
@@ -23,7 +23,11 @@ pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2:
     if (condition) {
         let address = cpu.next_short(memory);
         cpu.pc = address;
+
+        return true;
     }
+
+    false
 }
 
 pub fn jr(cpu: &mut Cpu, memory: &mut Memory) {
@@ -34,8 +38,7 @@ pub fn jr(cpu: &mut Cpu, memory: &mut Memory) {
     cpu.pc = res;
 }
 
-pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
-
+pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) -> bool {
     let condition = match operand1 {
         Operands::JR_Z =>   cpu.z(),
         Operands::JR_NZ => !cpu.z(),
@@ -46,10 +49,12 @@ pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
 
     if (condition) {
         jr(cpu, memory);
+        true
     }
     else {
         //TODO: For some reason when relative jump condition is not met cpu sp doesn't increment
-        cpu.pc += 2;
+        cpu.pc += 1;
+        false
     }
 
 }

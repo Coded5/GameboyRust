@@ -1,4 +1,4 @@
-use crate::emulator::{cpu::{Cpu, C, H, N, Z}, memory::{self, Memory}};
+use crate::emulator::{cpu::{Cpu, C, H, N, Z}, memory::Memory};
 
 use super::operand::Operands;
 

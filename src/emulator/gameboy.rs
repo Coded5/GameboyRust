@@ -1,3 +1,5 @@
+use std::time;
+
 use super::{cpu::Cpu, memory::Memory};
 
 #[derive(Debug)]
@@ -14,6 +16,21 @@ impl Gameboy {
         Gameboy {
             cpu: Cpu::new(),
             memory: Memory::new()
+        }
+    }
+
+    pub fn tick(&mut self) {
+        let max_cycle = 69905;
+        let mut current_cycle = 0;
+
+        while (current_cycle < max_cycle) {
+            let cycles = self.cpu.run(&mut self.memory);
+            current_cycle += cycles;
+
+            //update_timer(cycles);
+            //update_ppu(cycles);
+            //perform_interrupt();
+            //render();
         }
     }
 

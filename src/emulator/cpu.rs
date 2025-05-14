@@ -1,4 +1,10 @@
-use super::{instructions::{opcode::Opcode, opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode}}, memory::Memory};
+use super::{
+    instructions::{
+        opcode::Opcode,
+        opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode},
+    },
+    memory::Memory,
+};
 
 pub const Z: u8 = 7;
 pub const N: u8 = 6;
@@ -20,7 +26,6 @@ pub struct Cpu {
 }
 
 impl Cpu {
-
     pub fn new() -> Self {
         Cpu {
             a: 0u8,
@@ -53,11 +58,15 @@ impl Cpu {
         line.push_str(&opcode.mnemonic);
 
         if (data.len() != opcode.length - 1) {
-            panic!("Invalid opcode (Unequal length) [{}, {}]", opcode.length, data.len());
+            panic!(
+                "Invalid opcode (Unequal length) [{}, {}]",
+                opcode.length,
+                data.len()
+            );
         }
 
         let mut byte: u8 = 0;
-        let mut short: u16 = 0; 
+        let mut short: u16 = 0;
 
         if (!data.is_empty()) {
             byte = data[0];
@@ -81,7 +90,7 @@ impl Cpu {
         line
     }
 
-    pub fn run(&mut self, memory: &mut Memory) {
+    pub fn run(&mut self, memory: &mut Memory) -> i32 {
         //Fetch
         let opcode_byte = memory.get_byte(self.pc);
 
@@ -91,20 +100,30 @@ impl Cpu {
             let cb_opcode_byte = memory.get_byte(self.pc);
 
             get_prefixed_opcode(cb_opcode_byte)
-        }
-        else {
-            get_opcode(opcode_byte).unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
+        } else {
+            get_opcode(opcode_byte)
+                .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
         //Execute
-        execute_opcode(self, memory, opcode);
+        let time = execute_opcode(self, memory, opcode);
         self.pc += 1;
+
+        time
     }
 
-    pub fn z(&self) -> bool { ((self.f >> 7) & 1) == 1 }
-    pub fn n(&self) -> bool { ((self.f >> 6) & 1) == 1 }
-    pub fn h(&self) -> bool { ((self.f >> 5) & 1) == 1 }
-    pub fn c(&self) -> bool { ((self.f >> 4) & 1) == 1 }
+    pub fn z(&self) -> bool {
+        ((self.f >> 7) & 1) == 1
+    }
+    pub fn n(&self) -> bool {
+        ((self.f >> 6) & 1) == 1
+    }
+    pub fn h(&self) -> bool {
+        ((self.f >> 5) & 1) == 1
+    }
+    pub fn c(&self) -> bool {
+        ((self.f >> 4) & 1) == 1
+    }
 
     pub fn set(&mut self, flag: u8, value: bool) {
         let bit: u8 = if value { 1 } else { 0 };
@@ -114,16 +133,35 @@ impl Cpu {
         self.f |= (bit << flag);
     }
 
-    pub fn af(&self) -> u16 { (self.a as u16) << 8 | (self.f as u16) }
-    pub fn bc(&self) -> u16 { (self.b as u16) << 8 | (self.c as u16) }
-    pub fn de(&self) -> u16 { (self.d as u16) << 8 | (self.e as u16) }
-    pub fn hl(&self) -> u16 { (self.h as u16) << 8 | (self.l as u16) }
+    pub fn af(&self) -> u16 {
+        (self.a as u16) << 8 | (self.f as u16)
+    }
+    pub fn bc(&self) -> u16 {
+        (self.b as u16) << 8 | (self.c as u16)
+    }
+    pub fn de(&self) -> u16 {
+        (self.d as u16) << 8 | (self.e as u16)
+    }
+    pub fn hl(&self) -> u16 {
+        (self.h as u16) << 8 | (self.l as u16)
+    }
 
-    pub fn set_af(&mut self, val: u16) { self.a = ((val >> 8) & 0xff) as u8; self.f = (val & 0xff) as u8; }
-    pub fn set_bc(&mut self, val: u16) { self.b = ((val >> 8) & 0xff) as u8; self.c = (val & 0xff) as u8; }
-    pub fn set_de(&mut self, val: u16) { self.d = ((val >> 8) & 0xff) as u8; self.e = (val & 0xff) as u8; }
-    pub fn set_hl(&mut self, val: u16) { self.h = ((val >> 8) & 0xff) as u8; self.l = (val & 0xff) as u8; }
-
+    pub fn set_af(&mut self, val: u16) {
+        self.a = ((val >> 8) & 0xff) as u8;
+        self.f = (val & 0xff) as u8;
+    }
+    pub fn set_bc(&mut self, val: u16) {
+        self.b = ((val >> 8) & 0xff) as u8;
+        self.c = (val & 0xff) as u8;
+    }
+    pub fn set_de(&mut self, val: u16) {
+        self.d = ((val >> 8) & 0xff) as u8;
+        self.e = (val & 0xff) as u8;
+    }
+    pub fn set_hl(&mut self, val: u16) {
+        self.h = ((val >> 8) & 0xff) as u8;
+        self.l = (val & 0xff) as u8;
+    }
 }
 
 impl Default for Cpu {
