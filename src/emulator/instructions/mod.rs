@@ -1,13 +1,14 @@
-pub mod opcode;
-pub mod operand;
 pub mod inst_group;
+pub mod opcode;
 pub mod opcode_table;
+pub mod operand;
 
-pub mod loads;
-pub mod alu8;
 pub mod alu16;
-pub mod rotates;
+pub mod alu8;
 pub mod bits;
+pub mod interrupts;
 pub mod jumps;
-pub mod stack;
+pub mod loads;
 pub mod misc;
+pub mod rotates;
+pub mod stack;

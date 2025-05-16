@@ -2,14 +2,21 @@ use super::{
     instructions::{
         opcode::Opcode,
         opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode},
+        stack,
     },
-    memory::Memory,
+    memory::{self, Memory},
 };
 
 pub const Z: u8 = 7;
 pub const N: u8 = 6;
 pub const H: u8 = 5;
 pub const C: u8 = 4;
+
+pub const INT_JOYPAD: u8 = 4;
+pub const INT_SERIAL: u8 = 3;
+pub const INT_TIMER: u8 = 2;
+pub const INT_LCD: u8 = 1;
+pub const INT_VBLANK: u8 = 0;
 
 #[derive(Debug)]
 pub struct Cpu {
@@ -23,6 +30,9 @@ pub struct Cpu {
     pub l: u8,
     pub sp: u16,
     pub pc: u16,
+    pub ime: bool,
+    pub ie: u8,
+    pub intf: u8,
 }
 
 impl Cpu {
@@ -38,7 +48,19 @@ impl Cpu {
             l: 0u8,
             sp: 0u16,
             pc: 0u16,
+
+            ime: false,
+            ie: 0u8,
+            intf: 0u8,
         }
+    }
+
+    pub fn is_interrupt_enabled(&self, interrupt: u8) -> bool {
+        (self.ie >> interrupt) & 1 == 1
+    }
+
+    pub fn is_interrupt_requested(&self, interrupt: u8) -> bool {
+        (self.intf >> interrupt) & 1 == 1
     }
 
     pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
@@ -110,6 +132,47 @@ impl Cpu {
         self.pc += 1;
 
         time
+    }
+
+    pub fn perform_interrupt(&mut self, memory: &mut Memory) {
+        if (!self.ime) {
+            return;
+        }
+
+        //Check if any interrupts are requested
+        if (self.intf & self.ie != 0) {
+            return;
+        }
+
+        //Interrupt are disabled
+        self.ime = false;
+
+        //Calling interrupt
+        //Push PC to stack
+        let hi_byte = ((self.pc >> 8) & 0xFF) as u8;
+        let lo_byte = (self.pc & 0xFF) as u8;
+
+        self.sp -= 1;
+        *memory.get_mut_byte(self.sp) = hi_byte;
+        self.sp -= 1;
+        *memory.get_mut_byte(self.sp) = lo_byte;
+
+        //Get interrupt address
+        let address: u16 = if (self.is_interrupt_requested(INT_VBLANK)) {
+            0x40
+        } else if (self.is_interrupt_requested(INT_LCD)) {
+            0x48
+        } else if (self.is_interrupt_requested(INT_TIMER)) {
+            0x50
+        } else if (self.is_interrupt_requested(INT_SERIAL)) {
+            0x58
+        } else if (self.is_interrupt_requested(INT_JOYPAD)) {
+            0x60
+        } else {
+            panic!("Unknown requested interrupt!")
+        };
+
+        self.pc = address;
     }
 
     pub fn z(&self) -> bool {

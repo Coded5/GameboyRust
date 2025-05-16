@@ -15,7 +15,9 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    fn tick(&mut self, memory: &mut Memory) {}
+    fn tick(&mut self, memory: &mut Memory) {
+        unimplemented!();
+    }
 
     pub fn update(&mut self, cycles: i32, memory: &mut Memory) {
         for _ in 0..cycles {

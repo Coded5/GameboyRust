@@ -7,7 +7,7 @@ use super::loads::{load16, load8};
 use super::opcode::Opcode;
 use super::operand::Operands::{self, *};
 use super::stack::{pop, push};
-use super::{alu16, bits, jumps, misc, rotates, stack};
+use super::{alu16, bits, interrupts, jumps, misc, rotates, stack};
 
 pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32 {
     let operand1 = opcode.operand1.unwrap_or(Operands::NONE);
@@ -81,11 +81,11 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
         }
         MISC => {
             match opcode.mnemonic.as_str() {
-                // "DI" => unimplemented!(),
+                "DI" => interrupts::di(cpu),
                 "NOP" => (),
                 // "STOP" => unimplemented!(),
                 // "HALT" => unimplemented!(),
-                // "EI"   => unimplemented!(),
+                "EI" => interrupts::ei(cpu),
                 _ => panic!("Invalid Instruction {}", opcode.mnemonic),
             }
         }
