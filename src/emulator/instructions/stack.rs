@@ -61,6 +61,8 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
         _ => panic!(),
     };
 
+    let new_address = cpu.next_short(memory);
+
     if (!condition) {
         return false;
     }
@@ -74,7 +76,6 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     cpu.sp -= 1;
     *memory.get_mut_byte(cpu.sp) = lo_byte;
 
-    let new_address = cpu.next_short(memory);
     cpu.pc = new_address;
 
     true
@@ -87,7 +88,6 @@ pub fn ret(cpu: &mut Cpu, memory: &mut Memory) {
     cpu.sp += 1;
 
     cpu.pc = (hi << 8) | lo;
-    cpu.pc += 1;
 }
 
 pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
@@ -107,7 +107,7 @@ pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     true
 }
 
-pub fn rst(cpu: &mut Cpu, _memory: &mut Memory, operand: Operands) -> bool {
+pub fn rst(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     let address = match operand {
         Operands::H28 => 0x28,
         Operands::H00 => 0x00,
@@ -119,6 +119,11 @@ pub fn rst(cpu: &mut Cpu, _memory: &mut Memory, operand: Operands) -> bool {
         Operands::H10 => 0x10,
         _ => panic!(),
     };
+
+    cpu.sp -= 1;
+    *memory.get_mut_byte(cpu.sp) = ((cpu.pc >> 8) & 0xFF) as u8;
+    cpu.sp -= 1;
+    *memory.get_mut_byte(cpu.sp) = (cpu.pc & 0xFF) as u8;
 
     cpu.pc = address;
     false

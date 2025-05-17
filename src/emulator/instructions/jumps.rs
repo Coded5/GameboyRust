@@ -20,8 +20,8 @@ pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2:
         _ => true,
     };
 
+    let address = cpu.next_short(memory);
     if (condition) {
-        let address = cpu.next_short(memory);
         cpu.pc = address;
 
         return true;

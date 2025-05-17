@@ -65,7 +65,7 @@ impl Cpu {
 
     pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
         self.pc = self.pc.wrapping_add(1);
-        memory.get_byte(self.pc)
+        memory.get_byte(self.pc.wrapping_sub(1))
     }
 
     pub fn next_short(&mut self, memory: &mut Memory) -> u16 {
@@ -114,13 +114,14 @@ impl Cpu {
 
     pub fn run(&mut self, memory: &mut Memory) -> i32 {
         //Fetch
-        let opcode_byte = memory.get_byte(self.pc);
+        // let opcode_byte = memory.get_byte(self.pc);
+        let opcode_byte = self.next_byte(memory);
         println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
 
         //Decode
         let opcode = if (opcode_byte == 0xCB) {
-            self.pc = self.pc.wrapping_add(1);
-            let cb_opcode_byte = memory.get_byte(self.pc);
+            // let cb_opcode_byte = memory.get_byte(self.pc);
+            let cb_opcode_byte = self.next_byte(memory);
 
             get_prefixed_opcode(cb_opcode_byte)
         } else {
@@ -131,7 +132,7 @@ impl Cpu {
         //Execute
         let time = execute_opcode(self, memory, opcode);
         self.f &= 0xF0;
-        self.pc = self.pc.wrapping_add(1);
+        // self.pc = self.pc.wrapping_add(1);
 
         time
     }
