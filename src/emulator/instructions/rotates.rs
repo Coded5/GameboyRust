@@ -24,7 +24,7 @@ pub fn rla(cpu: &mut Cpu) {
 
     let res = (cpu.a << 1) | c;
 
-    cpu.set(Z, res == 0);
+    cpu.set(Z, false);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, msb == 1);
@@ -37,7 +37,7 @@ pub fn rrca(cpu: &mut Cpu) {
 
     let res = (cpu.a >> 1) | (lsb << 7);
 
-    cpu.set(Z, res == 0);
+    cpu.set(Z, false);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, lsb == 1);

@@ -64,7 +64,7 @@ impl Cpu {
     }
 
     pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         memory.get_byte(self.pc)
     }
 
@@ -119,7 +119,7 @@ impl Cpu {
 
         //Decode
         let opcode = if (opcode_byte == 0xCB) {
-            self.pc += 1;
+            self.pc = self.pc.wrapping_add(1);
             let cb_opcode_byte = memory.get_byte(self.pc);
 
             get_prefixed_opcode(cb_opcode_byte)

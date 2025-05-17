@@ -9,10 +9,8 @@ fn ei_default() -> u8 {
     0
 }
 
-//TODO: remove pub
-#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
-pub struct CpuState {
+struct CpuState {
     pc: u16,
     sp: u16,
     a: u8,
@@ -32,30 +30,13 @@ pub struct CpuState {
     ram: Vec<(u16, u8)>,
 }
 
-#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
-pub struct CpuTestCase {
+struct CpuTestCase {
     name: String,
     #[serde(rename = "initial")]
     initial_state: CpuState,
     #[serde(rename = "final")]
     final_state: CpuState,
-}
-
-fn load_test_cases() -> Result<Vec<CpuTestCase>, io::Error> {
-    let path = String::from("./sm83/v1/");
-    let res: Vec<Vec<CpuTestCase>> = fs::read_dir(path)?
-        .filter_map(|entry| {
-            let path = entry.ok()?.path();
-            if path.extension()?.to_str()? == "json" {
-                let contents = fs::read_to_string(path).ok()?;
-                serde_json::from_str::<Vec<CpuTestCase>>(&contents).ok()
-            } else {
-                None
-            }
-        })
-        .collect();
-    Ok(res.into_iter().flatten().collect())
 }
 
 fn load_test_cases_from_json(path: &str) -> Result<Vec<CpuTestCase>, io::Error> {
@@ -633,62 +614,3 @@ test_instruction_fb => "fb.json",
 test_instruction_fe => "fe.json",
 test_instruction_ff => "ff.json"
 );
-
-// #[test]
-// fn singlestep_test() {
-//     let mut cpu: Cpu = Cpu::new();
-//     let mut memory: Memory = Memory::new();
-//
-//     let cases: Vec<CpuTestCase> = load_test_cases().unwrap();
-//
-//     println!("{}", cases.len());
-//     for case in cases {
-//         let test_name = case.name;
-//         let initial_state = case.initial_state;
-//         let final_state = case.final_state;
-//
-//         cpu.a = initial_state.a;
-//         cpu.f = initial_state.f;
-//         cpu.b = initial_state.b;
-//         cpu.c = initial_state.c;
-//         cpu.d = initial_state.d;
-//         cpu.e = initial_state.e;
-//         cpu.h = initial_state.h;
-//         cpu.l = initial_state.l;
-//         cpu.ei = initial_state.ei;
-//         cpu.ime = initial_state.ime != 0;
-//
-//         for (address, value) in initial_state.ram {
-//             *memory.get_mut_byte(address) = value;
-//         }
-//
-//         cpu.run(&mut memory);
-//
-//         assert_eq!(cpu.a, final_state.a, "testing {} on register a", test_name);
-//         assert_eq!(cpu.f, final_state.f, "testing {} on register f", test_name);
-//         assert_eq!(cpu.b, final_state.b, "testing {} on register b", test_name);
-//         assert_eq!(cpu.c, final_state.c, "testing {} on register c", test_name);
-//         assert_eq!(cpu.d, final_state.d, "testing {} on register d", test_name);
-//         assert_eq!(cpu.e, final_state.e, "testing {} on register e", test_name);
-//         assert_eq!(cpu.h, final_state.h, "testing {} on register h", test_name);
-//         assert_eq!(cpu.l, final_state.l, "testing {} on register l", test_name);
-//         assert_eq!(cpu.ei, final_state.ei, "testing {} on EI", test_name);
-//         assert_eq!(
-//             cpu.ime,
-//             final_state.ime != 0,
-//             "testing {} on IME",
-//             test_name
-//         );
-//
-//         for (address, value) in final_state.ram {
-//             assert_eq!(
-//                 memory.get_byte(address),
-//                 value,
-//                 "testing {} on memory address {:0X} == {:0X}",
-//                 test_name,
-//                 address,
-//                 value
-//             );
-//         }
-//     }
-// }

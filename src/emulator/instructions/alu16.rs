@@ -1,9 +1,11 @@
-use crate::emulator::{cpu::{Cpu, N, H, C}, memory::Memory};
+use crate::emulator::{
+    cpu::{Cpu, C, H, N},
+    memory::Memory,
+};
 
 use super::operand::Operands;
 
 pub fn add(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands, operand2: Operands) {
-
     let rhs = match operand2 {
         Operands::BC => cpu.bc(),
         Operands::DE => cpu.de(),
@@ -21,7 +23,7 @@ pub fn add(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands, operand2: Op
     let (res, carry) = lhs.overflowing_add(rhs);
 
     cpu.set(N, false);
-    cpu.set(H, ((lhs & 0xF) + (rhs & 0xF)) > 0xF);
+    cpu.set(H, (((lhs & 0xFFF) + (rhs & 0xFFF)) & 0x1000) == 0x1000);
     cpu.set(C, carry);
 
     match operand1 {
@@ -29,11 +31,9 @@ pub fn add(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands, operand2: Op
         Operands::SP => cpu.sp = res,
         _ => panic!(),
     }
-
 }
 
 pub fn inc(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
-
     let rhs = match operand1 {
         Operands::BC => cpu.bc(),
         Operands::DE => cpu.de(),
@@ -52,7 +52,6 @@ pub fn inc(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
 }
 
 pub fn dec(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
-
     let rhs = match operand1 {
         Operands::BC => cpu.bc(),
         Operands::DE => cpu.de(),

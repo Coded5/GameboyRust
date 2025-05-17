@@ -5,6 +5,18 @@ use crate::emulator::{
 
 use super::operand::{self, Operands};
 
+pub fn ccf(cpu: &mut Cpu) {
+    cpu.set(Z, false);
+    cpu.set(H, false);
+    cpu.set(C, !cpu.c());
+}
+
+pub fn scf(cpu: &mut Cpu) {
+    cpu.set(N, false);
+    cpu.set(H, false);
+    cpu.set(C, true);
+}
+
 pub fn add(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Operands) {
     let rhs: u8 = match operand2 {
         Operands::A => cpu.a,
@@ -29,6 +41,9 @@ pub fn add(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
     cpu.a = res;
 }
 
+//ZNHC
+//00100000
+//00110000
 pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Operands) {
     let rhs: u8 = match operand2 {
         Operands::A => cpu.a,
@@ -43,17 +58,21 @@ pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
         _ => panic!(),
     };
 
-    let c: u8 = if cpu.c() { rhs + 1 } else { rhs };
-    let (res, carry) = cpu.a.overflowing_add(c);
+    let c: u8 = if cpu.c() { 1 } else { 0 };
+    let (res, carry_0) = cpu.a.overflowing_add(rhs);
+    let (res, carry_1) = res.overflowing_add(c);
 
     cpu.set(Z, res == 0);
     cpu.set(N, false);
-    cpu.set(H, ((cpu.a & 0xF) + (rhs & 0xF)) > 0xF);
-    cpu.set(C, carry);
+    cpu.set(H, ((cpu.a & 0xF) + (rhs & 0xF) + c) > 0xF);
+    cpu.set(C, carry_0 || carry_1);
 
     cpu.a = res;
 }
 
+//ZNHC
+//01110000
+//01010000
 pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
@@ -72,13 +91,15 @@ pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 
     cpu.set(Z, res == 0);
     cpu.set(N, true);
-    cpu.set(H, (cpu.a & 0xF) >= (rhs & 0xF));
+    cpu.set(H, (cpu.a & 0xF) < (rhs & 0xF));
     cpu.set(C, borrow);
 
     cpu.a = res;
 }
 
-pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+//01110000
+//01000000
+pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, _operand0: Operands, operand: Operands) {
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -92,13 +113,14 @@ pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         _ => panic!(),
     };
 
-    let n = if cpu.c() { rhs + 1 } else { rhs };
-    let (res, borrow) = cpu.a.overflowing_sub(n);
+    let c = if cpu.c() { 1 } else { 0 };
+    let (res, borrow0) = cpu.a.overflowing_sub(rhs);
+    let (res, borrow1) = res.overflowing_sub(c);
 
     cpu.set(Z, res == 0);
     cpu.set(N, true);
-    cpu.set(H, (cpu.a & 0xF) >= (rhs & 0xF));
-    cpu.set(C, !borrow);
+    cpu.set(H, (cpu.a & 0xF) < (rhs & 0xF) + c);
+    cpu.set(C, borrow0 || borrow1);
 
     cpu.a = res;
 }
@@ -191,7 +213,7 @@ pub fn cp(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 
     cpu.set(Z, cpu.a == rhs);
     cpu.set(N, true);
-    cpu.set(H, (cpu.a & 0xF) >= (rhs & 0xF));
+    cpu.set(H, (cpu.a & 0xF) < (rhs & 0xF));
     cpu.set(C, cpu.a < rhs);
 }
 

@@ -19,12 +19,12 @@ pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::AddrDE => memory.get_byte(cpu.de()),
         Operands::AddrHLI => {
-            cpu.set_bc(cpu.bc() + 1);
-            memory.get_byte(cpu.bc() - 1)
+            cpu.set_hl(cpu.hl() + 1);
+            memory.get_byte(cpu.hl() - 1)
         }
         Operands::AddrHLD => {
-            cpu.set_bc(cpu.bc() - 1);
-            memory.get_byte(cpu.bc() + 1)
+            cpu.set_hl(cpu.hl() - 1);
+            memory.get_byte(cpu.hl() + 1)
         }
         Operands::AddrFF00_C => memory.get_byte(cpu.c as u16),
         Operands::AddrFF00_U8 => {
