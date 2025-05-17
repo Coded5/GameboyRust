@@ -1,5 +1,8 @@
-use crate::emulator::{cpu::{Cpu, Z, N, H, C}, memory::Memory};
 use super::operand::Operands;
+use crate::emulator::{
+    cpu::{Cpu, C, H, N, Z},
+    memory::Memory,
+};
 
 #[allow(dead_code, unused)]
 pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
@@ -12,26 +15,26 @@ pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrBC  => memory.get_byte(cpu.bc()),
-        Operands::AddrHL  => memory.get_byte(cpu.hl()),
-        Operands::AddrDE  => memory.get_byte(cpu.de()),
+        Operands::AddrBC => memory.get_byte(cpu.bc()),
+        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrDE => memory.get_byte(cpu.de()),
         Operands::AddrHLI => {
             cpu.set_bc(cpu.bc() + 1);
             memory.get_byte(cpu.bc() - 1)
-        },
+        }
         Operands::AddrHLD => {
             cpu.set_bc(cpu.bc() - 1);
             memory.get_byte(cpu.bc() + 1)
-        },
-        Operands::AddrFF00_C  => memory.get_byte(cpu.c as u16),
+        }
+        Operands::AddrFF00_C => memory.get_byte(cpu.c as u16),
         Operands::AddrFF00_U8 => {
             let addr: u16 = 0xFF00 + cpu.next_byte(memory) as u16;
             memory.get_byte(addr)
-        },
+        }
         Operands::AddrU16 => {
             let addr: u16 = cpu.next_short(memory);
             memory.get_byte(addr)
-        },
+        }
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!("Invalid source : {:?}", operand2),
     };
@@ -50,17 +53,17 @@ pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
         Operands::AddrHLI => {
             cpu.set_hl(cpu.hl() + 1);
             memory.get_mut_byte(cpu.hl() - 1)
-        },
+        }
         Operands::AddrHLD => {
             cpu.set_hl(cpu.hl() - 1);
             memory.get_mut_byte(cpu.hl() + 1)
-        },
+        }
         Operands::AddrDE => memory.get_mut_byte(cpu.de()),
         Operands::AddrFF00_C => memory.get_mut_byte(0xFF00 + cpu.c as u16),
         Operands::AddrFF00_U8 => {
             let addr: u16 = 0xFF00 + cpu.next_byte(memory) as u16;
             memory.get_mut_byte(addr)
-        },
+        }
         Operands::AddrU16 => {
             let addr: u16 = cpu.next_short(memory);
             memory.get_mut_byte(addr)
@@ -72,10 +75,9 @@ pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
 }
 
 pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
-    
     let src: u16 = match operand2 {
         Operands::U16 => cpu.next_short(memory),
-        Operands::HL  => cpu.hl(),
+        Operands::HL => cpu.hl(),
         Operands::SP_i8 => {
             let offset: u8 = cpu.next_byte(memory);
             let (val, carry) = cpu.sp.overflowing_add_signed(offset as i16);
@@ -83,8 +85,7 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
             //HACK: this is so bad :(
             let half_carry: bool = if ((offset as i8).is_positive()) {
                 ((cpu.sp & 0xF) + (offset as u16 & 0xF)) > 0xF
-            }
-            else {
+            } else {
                 (cpu.sp & 0xF) < (offset as u16 & 0xF)
             };
 
@@ -94,7 +95,7 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
             cpu.set(C, carry);
 
             val
-        },
+        }
         Operands::SP => cpu.sp,
         _ => panic!("Invalid source : {:?}", operand2),
     };
@@ -106,8 +107,10 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
         Operands::SP => cpu.sp = src,
         Operands::AddrU16 => {
             let address = cpu.next_short(memory);
-            let lo: u8 = (src & 0xF) as u8;
-            let hi: u8 = ((src >> 8) & 0xF) as u8;
+            let lo: u8 = (src & 0xFF) as u8;
+            let hi: u8 = ((src >> 8) & 0xFF) as u8;
+
+            println!("sp: {}, hi: {}, lo: {}", cpu.sp, hi, lo);
 
             *memory.get_mut_byte(address) = lo;
             *memory.get_mut_byte(address + 1) = hi;

@@ -78,6 +78,8 @@ macro_rules! generate_tests {
                     let initial_state = case.initial_state;
                     let final_state = case.final_state;
 
+                    cpu.sp = initial_state.sp;
+                    cpu.pc = initial_state.pc;
                     cpu.a = initial_state.a;
                     cpu.f = initial_state.f;
                     cpu.b = initial_state.b;
@@ -95,6 +97,8 @@ macro_rules! generate_tests {
 
                     cpu.run(&mut memory);
 
+                    assert_eq!(cpu.pc, final_state.pc, "testing {} on PC", test_name);
+                    assert_eq!(cpu.sp, final_state.sp, "testing {} on SP", test_name);
                     assert_eq!(cpu.a, final_state.a, "testing {} on register a", test_name);
                     assert_eq!(cpu.f, final_state.f, "testing {} on register f", test_name);
                     assert_eq!(cpu.b, final_state.b, "testing {} on register b", test_name);
@@ -115,7 +119,7 @@ macro_rules! generate_tests {
                         assert_eq!(
                             memory.get_byte(address),
                             value,
-                            "testing {} on memory address {:0X} == {:0X}",
+                            "testing {} on memory address {} should be {}",
                             test_name,
                             address,
                             value

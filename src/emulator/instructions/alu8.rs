@@ -1,9 +1,11 @@
-use crate::emulator::{cpu::{Cpu, Z, N, H, C}, memory::Memory};
+use crate::emulator::{
+    cpu::{Cpu, C, H, N, Z},
+    memory::Memory,
+};
 
 use super::operand::{self, Operands};
 
 pub fn add(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Operands) {
-    
     let rhs: u8 = match operand2 {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -28,7 +30,6 @@ pub fn add(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
 }
 
 pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Operands) {
-
     let rhs: u8 = match operand2 {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -42,7 +43,7 @@ pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
         _ => panic!(),
     };
 
-    let c: u8 = if cpu.c() { rhs+1 } else { rhs };
+    let c: u8 = if cpu.c() { rhs + 1 } else { rhs };
     let (res, carry) = cpu.a.overflowing_add(c);
 
     cpu.set(Z, res == 0);
@@ -54,7 +55,6 @@ pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
 }
 
 pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -67,7 +67,7 @@ pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
- 
+
     let (res, borrow) = cpu.a.overflowing_sub(rhs);
 
     cpu.set(Z, res == 0);
@@ -79,7 +79,6 @@ pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -92,7 +91,7 @@ pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
- 
+
     let n = if cpu.c() { rhs + 1 } else { rhs };
     let (res, borrow) = cpu.a.overflowing_sub(n);
 
@@ -105,7 +104,6 @@ pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn and(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -130,7 +128,6 @@ pub fn and(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn or(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -155,7 +152,6 @@ pub fn or(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn xor(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -180,7 +176,6 @@ pub fn xor(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn cp(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -198,11 +193,9 @@ pub fn cp(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(N, true);
     cpu.set(H, (cpu.a & 0xF) >= (rhs & 0xF));
     cpu.set(C, cpu.a < rhs);
-
 }
 
 pub fn inc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -219,8 +212,8 @@ pub fn inc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 
     cpu.set(Z, res == 0);
     cpu.set(N, false);
-    cpu.set(H, ((cpu.a & 0xF) + (rhs & 0xF)) > 0xF);
- 
+    cpu.set(H, ((1 & 0xF) + (rhs & 0xF)) > 0xF);
+
     let lhs: &mut u8 = match operand {
         Operands::A => &mut cpu.a,
         Operands::B => &mut cpu.b,
@@ -234,11 +227,9 @@ pub fn inc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 
     *lhs = res;
-    
 }
 
 pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -255,8 +246,8 @@ pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 
     cpu.set(Z, res == 0);
     cpu.set(N, true);
-    cpu.set(H, (cpu.a & 0xF) >= (rhs & 0xF));
- 
+    cpu.set(H, (rhs & 0xF) < (1 & 0xF));
+
     let lhs: &mut u8 = match operand {
         Operands::A => &mut cpu.a,
         Operands::B => &mut cpu.b,
@@ -270,5 +261,4 @@ pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 
     *lhs = res;
-    
 }

@@ -1,4 +1,7 @@
-use crate::emulator::{cpu::{Cpu, C, H, N, Z}, memory::Memory};
+use crate::emulator::{
+    cpu::{Cpu, C, H, N, Z},
+    memory::Memory,
+};
 
 use super::operand::Operands;
 
@@ -7,7 +10,7 @@ pub fn rlca(cpu: &mut Cpu) {
 
     let res = (cpu.a << 1) | msb;
 
-    cpu.set(Z, res == 0);
+    cpu.set(Z, false);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, msb == 1);
@@ -20,7 +23,7 @@ pub fn rla(cpu: &mut Cpu) {
     let c = if cpu.c() { 1 } else { 0 };
 
     let res = (cpu.a << 1) | c;
-    
+
     cpu.set(Z, res == 0);
     cpu.set(N, false);
     cpu.set(H, false);
@@ -48,7 +51,7 @@ pub fn rra(cpu: &mut Cpu) {
 
     let res = (cpu.a >> 1) | (c << 7);
 
-    cpu.set(Z, res == 0);    
+    cpu.set(Z, res == 0);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
@@ -57,7 +60,6 @@ pub fn rra(cpu: &mut Cpu) {
 }
 
 pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -94,7 +96,6 @@ pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -115,7 +116,6 @@ pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
 
-    
     let dest: &mut u8 = match operand {
         Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
         Operands::A => &mut cpu.a,
@@ -132,7 +132,6 @@ pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -153,7 +152,7 @@ pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
-     
+
     let dest: &mut u8 = match operand {
         Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
         Operands::A => &mut cpu.a,
@@ -170,7 +169,6 @@ pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -191,7 +189,7 @@ pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, msb == 1);
-     
+
     let dest: &mut u8 = match operand {
         Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
         Operands::A => &mut cpu.a,
@@ -208,7 +206,6 @@ pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -224,7 +221,7 @@ pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let msb = (src >> 7) & 1;
     let res = src << 1;
 
-    cpu.set(Z, res == 0); 
+    cpu.set(Z, res == 0);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, msb == 1);
@@ -245,7 +242,6 @@ pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
 }
 
 pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -264,7 +260,7 @@ pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let lsb = src & 1;
     let res = (src >> 1) | (msb << 7);
 
-    cpu.set(Z, res == 0); 
+    cpu.set(Z, res == 0);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
@@ -284,8 +280,7 @@ pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     *dest = res;
 }
 
-pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) { 
-
+pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
         Operands::AddrHL => memory.get_byte(cpu.hl()),
         Operands::A => cpu.a,
@@ -301,7 +296,7 @@ pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let lsb = src & 1;
     let res = src >> 1;
 
-    cpu.set(Z, res == 0); 
+    cpu.set(Z, res == 0);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, lsb == 1);

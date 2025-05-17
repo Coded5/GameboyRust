@@ -115,6 +115,7 @@ impl Cpu {
     pub fn run(&mut self, memory: &mut Memory) -> i32 {
         //Fetch
         let opcode_byte = memory.get_byte(self.pc);
+        println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
 
         //Decode
         let opcode = if (opcode_byte == 0xCB) {
@@ -129,7 +130,8 @@ impl Cpu {
 
         //Execute
         let time = execute_opcode(self, memory, opcode);
-        self.pc += 1;
+        self.f &= 0xF0;
+        self.pc = self.pc.wrapping_add(1);
 
         time
     }

@@ -98,7 +98,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
     match fetched_byte {
         0x00 => Ok(Opcode::opcode0(MISC, "NOP", 0x00, 1, vec![4])),
         0x01 => Ok(Opcode::opcode2(LD16, "LD", 0x01, 3, vec![12], BC, U16)),
-        0x02 => Ok(Opcode::opcode2(LD8, "LD", 0x02, 1, vec![8], (BC), A)),
+        0x02 => Ok(Opcode::opcode2(LD8, "LD", 0x02, 1, vec![8], AddrBC, A)),
         0x03 => Ok(Opcode::opcode1(ALU16, "INC", 0x03, 1, vec![8], BC)),
         0x04 => Ok(Opcode::opcode1(ALU8, "INC", 0x04, 1, vec![4], B)),
         0x05 => Ok(Opcode::opcode1(ALU8, "DEC", 0x05, 1, vec![4], B)),
@@ -106,7 +106,7 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0x07 => Ok(Opcode::opcode0(RSB8, "RLCA", 0x07, 1, vec![4])),
         0x08 => Ok(Opcode::opcode2(LD16, "LD", 0x08, 3, vec![20], AddrU16, SP)),
         0x09 => Ok(Opcode::opcode2(ALU16, "ADD", 0x09, 1, vec![8], HL, BC)),
-        0x0a => Ok(Opcode::opcode2(LD8, "LD", 0x0a, 1, vec![8], A, (BC))),
+        0x0a => Ok(Opcode::opcode2(LD8, "LD", 0x0a, 1, vec![8], A, AddrBC)),
         0x0b => Ok(Opcode::opcode1(ALU16, "DEC", 0x0b, 1, vec![8], BC)),
         0x0c => Ok(Opcode::opcode1(ALU8, "INC", 0x0c, 1, vec![4], C)),
         0x0d => Ok(Opcode::opcode1(ALU8, "DEC", 0x0d, 1, vec![4], C)),
