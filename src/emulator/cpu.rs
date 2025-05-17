@@ -31,7 +31,7 @@ pub struct Cpu {
     pub sp: u16,
     pub pc: u16,
     pub ime: bool,
-    pub ie: u8,
+    pub ei: u8,
     pub intf: u8,
 }
 
@@ -50,13 +50,13 @@ impl Cpu {
             pc: 0u16,
 
             ime: false,
-            ie: 0u8,
+            ei: 0u8,
             intf: 0u8,
         }
     }
 
     pub fn is_interrupt_enabled(&self, interrupt: u8) -> bool {
-        (self.ie >> interrupt) & 1 == 1
+        (self.ei >> interrupt) & 1 == 1
     }
 
     pub fn is_interrupt_requested(&self, interrupt: u8) -> bool {
@@ -140,7 +140,7 @@ impl Cpu {
         }
 
         //Check if any interrupts are requested
-        if (self.intf & self.ie != 0) {
+        if (self.intf & self.ei != 0) {
             return;
         }
 
