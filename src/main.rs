@@ -1,9 +1,7 @@
-use std::{env, io};
+use std::env;
+use std::io;
 
-use gameboy::{
-    emulator::gameboy::Gameboy,
-    gui::{debug_term_gui::EmuDebugger, disassembler::disassemble_rom},
-};
+use gameboy::{emulator::gameboy::Gameboy, gui::debug_term_gui::EmuDebugger};
 
 fn main() -> io::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
