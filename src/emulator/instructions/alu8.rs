@@ -6,8 +6,8 @@ use crate::emulator::{
 use super::operand::{self, Operands};
 
 pub fn ccf(cpu: &mut Cpu) {
-    cpu.set(Z, false);
     cpu.set(H, false);
+    cpu.set(N, false);
     cpu.set(C, !cpu.c());
 }
 

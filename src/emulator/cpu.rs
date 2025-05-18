@@ -33,6 +33,8 @@ pub struct Cpu {
     pub ime: bool,
     pub ei: u8,
     pub intf: u8,
+
+    pub i_enable_flag: bool,
 }
 
 impl Cpu {
@@ -52,6 +54,7 @@ impl Cpu {
             ime: false,
             ei: 0u8,
             intf: 0u8,
+            i_enable_flag: false,
         }
     }
 
@@ -113,6 +116,11 @@ impl Cpu {
     }
 
     pub fn run(&mut self, memory: &mut Memory) -> i32 {
+        if (self.i_enable_flag) {
+            self.ime = true;
+            self.i_enable_flag = false;
+        }
+
         //Fetch
         // let opcode_byte = memory.get_byte(self.pc);
         let opcode_byte = self.next_byte(memory);

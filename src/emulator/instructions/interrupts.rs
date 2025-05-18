@@ -1,8 +1,8 @@
 use crate::emulator::cpu::{self, Cpu};
 
-//TODO: Delay this by 1 instruction
 pub fn ei(cpu: &mut Cpu) {
-    cpu.ime = true;
+    //This there a better way?
+    cpu.i_enable_flag = true;
 }
 
 pub fn di(cpu: &mut Cpu) {

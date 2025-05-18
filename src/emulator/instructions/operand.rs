@@ -1,16 +1,32 @@
 #[allow(non_camel_case_types)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Operands {
     NONE,
 
     //R8
-    A, F, B, C, D, E, H, L,
+    A,
+    F,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
 
     //R16
-    AF, BC, DE, HL, SP,
+    AF,
+    BC,
+    DE,
+    HL,
+    SP,
 
     //Addresses
-    AddrBC, AddrHL, AddrHLI, AddrHLD, AddrDE, AddrFF00_C,
+    AddrBC,
+    AddrHL,
+    AddrHLI,
+    AddrHLD,
+    AddrDE,
+    AddrFF00_C,
 
     //Resolvable Addresses
     AddrFF00_U8,
@@ -23,15 +39,15 @@ pub enum Operands {
     JR_C,
     JR_NC,
 
-	H28,
-	H00,
-	H08,
-	H20,
-	H18,
-	H38,
-	H30,
-	H10,
-    
+    H28,
+    H00,
+    H08,
+    H20,
+    H18,
+    H38,
+    H30,
+    H10,
+
     U8,
     I8,
     U16,
@@ -41,7 +57,15 @@ pub enum Operands {
 
 impl Operands {
     pub fn is_resolvable(&self) -> bool {
-        matches!(*self, Operands::AddrFF00_U8 | Operands::AddrU16 | Operands::SP_i8 | Operands::U8 | Operands::I8 | Operands::U16)
+        matches!(
+            *self,
+            Operands::AddrFF00_U8
+                | Operands::AddrU16
+                | Operands::SP_i8
+                | Operands::U8
+                | Operands::I8
+                | Operands::U16
+        )
     }
 
     pub fn get_byte_length(&self) -> usize {
@@ -84,7 +108,7 @@ impl Operands {
             Operands::I8 => 1,
             Operands::U16 => 2,
             Operands::I(_) => 1,
-            Operands::NONE => 0
+            Operands::NONE => 0,
         }
     }
 

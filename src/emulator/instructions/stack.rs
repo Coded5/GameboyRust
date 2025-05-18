@@ -90,6 +90,13 @@ pub fn ret(cpu: &mut Cpu, memory: &mut Memory) {
     cpu.pc = (hi << 8) | lo;
 }
 
+pub fn reti(cpu: &mut Cpu, memory: &mut Memory) -> bool {
+    cpu.ime = true;
+    ret(cpu, memory);
+
+    false
+}
+
 pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     let condition = match operand {
         Operands::JR_Z => cpu.z(),

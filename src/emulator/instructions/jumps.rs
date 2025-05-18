@@ -7,14 +7,17 @@ pub fn jpnn(cpu: &mut Cpu, memory: &mut Memory) {
     cpu.pc = address;
 }
 
-pub fn jphl(cpu: &mut Cpu, _memory: &mut Memory) {
+pub fn jphl(cpu: &mut Cpu, _memory: &mut Memory) -> bool {
     cpu.pc = cpu.hl();
+
+    //NOTE: JP HL always branch
+    false
 }
 
 pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2: Operands) -> bool {
     let condition = match operand1 {
-        Operands::JR_Z => cpu.z(),
         Operands::JR_NZ => !cpu.z(),
+        Operands::JR_Z => cpu.z(),
         Operands::JR_C => cpu.c(),
         Operands::JR_NC => !cpu.c(),
         _ => true,
