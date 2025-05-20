@@ -34,6 +34,8 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
             "DEC" => alu8::dec(cpu, memory, operand1),
             "SCF" => alu8::scf(cpu),
             "CCF" => alu8::ccf(cpu),
+            "CPL" => alu8::cpl(cpu),
+            "DAA" => alu8::daa(cpu),
             _ => panic!("Invalid instruction {}", opcode.mnemonic),
         },
         ALU16 => match opcode.mnemonic.as_str() {
@@ -180,7 +182,15 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0x36 => Ok(Opcode::opcode2(LD8, "LD", 0x36, 2, vec![12], AddrHL, U8)),
         0x37 => Ok(Opcode::opcode0(ALU8, "SCF", 0x37, 1, vec![4])),
         //TODO: Fix this
-        0x38 => Ok(Opcode::opcode2(BRANCH, "JR", 0x38, 2, vec![8, 12], C, I8)),
+        0x38 => Ok(Opcode::opcode2(
+            BRANCH,
+            "JR",
+            0x38,
+            2,
+            vec![8, 12],
+            JR_C,
+            I8,
+        )),
         0x39 => Ok(Opcode::opcode2(ALU16, "ADD", 0x39, 1, vec![8], HL, SP)),
         0x3a => Ok(Opcode::opcode2(LD8, "LD", 0x3a, 1, vec![8], A, AddrHLD)),
         0x3b => Ok(Opcode::opcode1(ALU16, "DEC", 0x3b, 1, vec![8], SP)),

@@ -5,6 +5,45 @@ use crate::emulator::{
 
 use super::operand::{self, Operands};
 
+pub fn daa(cpu: &mut Cpu) {
+    let mut a = cpu.a;
+    let mut adjust = 0;
+    let mut carry = false;
+
+    if cpu.n() {
+        if cpu.h() {
+            adjust |= 0x06;
+        }
+        if cpu.c() {
+            adjust |= 0x60;
+        }
+        a = a.wrapping_sub(adjust);
+    } else {
+        if cpu.h() || (a & 0x0F) > 0x09 {
+            adjust |= 0x06;
+        }
+        if cpu.c() || a > 0x99 {
+            adjust |= 0x60;
+            carry = true;
+        }
+        a = a.wrapping_add(adjust);
+    }
+
+    cpu.set(Z, a == 0);
+    cpu.set(H, false); // Always cleared
+    if !cpu.n() {
+        cpu.set(C, carry); // Only set during addition
+    }
+
+    cpu.a = a;
+}
+
+pub fn cpl(cpu: &mut Cpu) {
+    cpu.a = !cpu.a;
+    cpu.set(N, true);
+    cpu.set(H, true);
+}
+
 pub fn ccf(cpu: &mut Cpu) {
     cpu.set(H, false);
     cpu.set(N, false);
@@ -41,9 +80,6 @@ pub fn add(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
     cpu.a = res;
 }
 
-//ZNHC
-//00100000
-//00110000
 pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Operands) {
     let rhs: u8 = match operand2 {
         Operands::A => cpu.a,
@@ -70,9 +106,6 @@ pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
     cpu.a = res;
 }
 
-//ZNHC
-//01110000
-//01010000
 pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
@@ -97,8 +130,6 @@ pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.a = res;
 }
 
-//01110000
-//01000000
 pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, _operand0: Operands, operand: Operands) {
     let rhs: u8 = match operand {
         Operands::A => cpu.a,
