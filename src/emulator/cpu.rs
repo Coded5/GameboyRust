@@ -12,6 +12,9 @@ pub const N: u8 = 6;
 pub const H: u8 = 5;
 pub const C: u8 = 4;
 
+pub const ADDRESS_IE: u16 = 0xFFFF;
+pub const ADDRESS_IF: u16 = 0xFF0F;
+
 pub const INT_JOYPAD: u8 = 4;
 pub const INT_SERIAL: u8 = 3;
 pub const INT_TIMER: u8 = 2;
@@ -31,8 +34,6 @@ pub struct Cpu {
     pub sp: u16,
     pub pc: u16,
     pub ime: bool,
-    pub ei: u8,
-    pub intf: u8,
 
     pub i_enable_flag: bool,
 }
@@ -52,18 +53,8 @@ impl Cpu {
             pc: 0u16,
 
             ime: false,
-            ei: 0u8,
-            intf: 0u8,
             i_enable_flag: false,
         }
-    }
-
-    pub fn is_interrupt_enabled(&self, interrupt: u8) -> bool {
-        (self.ei >> interrupt) & 1 == 1
-    }
-
-    pub fn is_interrupt_requested(&self, interrupt: u8) -> bool {
-        (self.intf >> interrupt) & 1 == 1
     }
 
     pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
@@ -145,13 +136,37 @@ impl Cpu {
         time
     }
 
+    pub fn is_interrupt_enabled(&self, interrupt: u8, memory: &Memory) -> bool {
+        memory.get_byte(ADDRESS_IE) >> interrupt & 0x1 == 1
+    }
+
+    pub fn is_interrupt_requested(&self, interrupt: u8, memory: &Memory) -> bool {
+        memory.get_byte(ADDRESS_IF) >> interrupt & 0x1 == 1
+    }
+
+    pub fn set_ie(&self, value: u8, memory: &mut Memory) {
+        *memory.get_mut_byte(ADDRESS_IE) = value;
+    }
+
+    pub fn set_if(&self, value: u8, memory: &mut Memory) {
+        *memory.get_mut_byte(ADDRESS_IF) = value;
+    }
+
+    pub fn get_ie(&self, memory: &Memory) -> u8 {
+        memory.get_byte(ADDRESS_IE)
+    }
+
+    pub fn get_if(&self, memory: &Memory) -> u8 {
+        memory.get_byte(ADDRESS_IF)
+    }
+
     pub fn perform_interrupt(&mut self, memory: &mut Memory) {
         if (!self.ime) {
             return;
         }
 
         //Check if any interrupts are requested
-        if (self.intf & self.ei != 0) {
+        if (self.get_if(memory) & self.get_ie(memory) == 0) {
             return;
         }
 
@@ -169,15 +184,15 @@ impl Cpu {
         *memory.get_mut_byte(self.sp) = lo_byte;
 
         //Get interrupt address
-        let address: u16 = if (self.is_interrupt_requested(INT_VBLANK)) {
+        let address: u16 = if (self.is_interrupt_requested(INT_VBLANK, memory)) {
             0x40
-        } else if (self.is_interrupt_requested(INT_LCD)) {
+        } else if (self.is_interrupt_requested(INT_LCD, memory)) {
             0x48
-        } else if (self.is_interrupt_requested(INT_TIMER)) {
+        } else if (self.is_interrupt_requested(INT_TIMER, memory)) {
             0x50
-        } else if (self.is_interrupt_requested(INT_SERIAL)) {
+        } else if (self.is_interrupt_requested(INT_SERIAL, memory)) {
             0x58
-        } else if (self.is_interrupt_requested(INT_JOYPAD)) {
+        } else if (self.is_interrupt_requested(INT_JOYPAD, memory)) {
             0x60
         } else {
             panic!("Unknown requested interrupt!")
