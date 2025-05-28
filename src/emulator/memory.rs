@@ -3,8 +3,9 @@ use std::io;
 use std::io::Read;
 
 #[derive(Debug)]
-pub struct Memory { 
-    memory: [u8; 0x10000]
+pub struct Memory {
+    memory: [u8; 0x10000],
+    lock_vram: bool,
 }
 
 impl Default for Memory {
@@ -14,10 +15,10 @@ impl Default for Memory {
 }
 
 impl Memory {
-
     pub fn new() -> Self {
         Memory {
-            memory: [0_u8; 0x10000]
+            memory: [0_u8; 0x10000],
+            lock_vram: false,
         }
     }
 
@@ -45,5 +46,4 @@ impl Memory {
     pub fn get_byte(&self, address: u16) -> u8 {
         self.memory[address as usize]
     }
-
 }

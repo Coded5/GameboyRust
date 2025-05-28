@@ -4,6 +4,9 @@ use super::{
         opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode},
         stack,
     },
+    interrupts_helper::{
+        ADDRESS_IE, ADDRESS_IF, INT_JOYPAD, INT_LCD, INT_SERIAL, INT_TIMER, INT_VBLANK,
+    },
     memory::{self, Memory},
 };
 
@@ -11,15 +14,6 @@ pub const Z: u8 = 7;
 pub const N: u8 = 6;
 pub const H: u8 = 5;
 pub const C: u8 = 4;
-
-pub const ADDRESS_IE: u16 = 0xFFFF;
-pub const ADDRESS_IF: u16 = 0xFF0F;
-
-pub const INT_JOYPAD: u8 = 4;
-pub const INT_SERIAL: u8 = 3;
-pub const INT_TIMER: u8 = 2;
-pub const INT_LCD: u8 = 1;
-pub const INT_VBLANK: u8 = 0;
 
 #[derive(Debug)]
 pub struct Cpu {
