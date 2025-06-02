@@ -96,25 +96,26 @@ impl Ppu {
         let scy = memory.get_byte(SCY);
 
         let tile_y = ((scy + y_position) / 8) as u16;
-
-        let line_offset = (((scy + y_position) % 8) * 2) as u16;
+        let line_offset = ((scy + y_position) % 8) as u16;
 
         for x_position in 0..160 {
-            let tile_x = ((scx + x_position) / 8) as u16;
+            // let tile_x = ((scx + x_position) / 8) as u16;
+            let tile_x = (((scx + x_position) / 8) & 0x1F) as u16;
             let tile_index = memory.get_byte(TILEMAP_START_ADDR + tile_y * 32 + tile_x) as u16;
-            let tile_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset;
+            let tile_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2;
 
             let hi = memory.get_byte(tile_address);
             let lo = memory.get_byte(tile_address + 1);
 
-            //HACK: naive render
-            for i in (0..8).rev() {
-                let hi_bit = (hi >> i) & 1;
-                let lo_bit = (lo >> i) & 1;
+            let pixel_in_tile = (scx + x_position) % 8;
 
-                let pixel = (lo_bit << 1) | hi_bit;
-                self.screen_buffer[(x_position as usize) + (y_position as usize) * 144] = pixel;
-            }
+            //HACK: naive render
+            let bit_index = 7 - pixel_in_tile;
+            let hi_bit = (hi >> bit_index) & 1;
+            let lo_bit = (lo >> bit_index) & 1;
+
+            let pixel = (lo_bit << 1) | hi_bit;
+            self.screen_buffer[(x_position as usize) + (y_position as usize) * 160] = pixel;
         }
     }
 
@@ -135,7 +136,6 @@ impl Ppu {
             PpuMode::DRAW => {
                 //TODO: Write to screen buffer
                 self.draw_pixel_fifo(memory);
-                self.next_scanline(memory);
                 self.mode = PpuMode::HBLANK;
             }
             PpuMode::HBLANK => {

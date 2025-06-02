@@ -51,12 +51,17 @@ impl Gameboy {
             0x7E, 0xFF,
         ];
 
+        let tile_00: [u8; 16] = [
+            0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0x00,
+            0x00, 0x00,
+        ];
+
         for i in 0..16 {
-            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_0[i];
-            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
+            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_1[i];
+            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_00[i];
         }
 
-        *self.memory.get_mut_byte(0x9801) = 1u8;
+        // *self.memory.get_mut_byte(0x9801) = 1u8;
         *self.memory.get_mut_byte(0x9800) = 1u8;
     }
 

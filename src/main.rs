@@ -22,7 +22,7 @@ use piston::RenderEvent;
 // }
 
 fn main() {
-    let mut screen = Screen::start(2);
+    let mut screen = Screen::start(6);
     let mut events = Events::new(EventSettings::new());
 
     let mut gb: Gameboy = Gameboy::new();
