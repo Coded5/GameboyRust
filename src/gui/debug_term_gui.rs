@@ -2,27 +2,20 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
-    layout::{
-        Constraint,
-        Layout
-    }, 
-    DefaultTerminal,
-    Frame
+    layout::{Constraint, Layout},
+    DefaultTerminal, Frame,
 };
 
 use crate::emulator::gameboy::Gameboy;
 
-use super::widgets::{
-    instructions_widget::InstructionWidget,
-    memory_widget::{
-        MemoryWidget,
-        MemoryWidgetState
+use super::{
+    gameboy_screen::ScreenWidget,
+    widgets::{
+        instructions_widget::InstructionWidget,
+        memory_widget::{MemoryWidget, MemoryWidgetState},
+        registers_widget::RegistersWidget,
+        stacks_widget::{StackWidget, StackWidgetState},
     },
-    registers_widget::RegistersWidget,
-    stacks_widget::{
-        StackWidget,
-        StackWidgetState
-    }
 };
 
 #[derive(Debug)]
@@ -31,15 +24,16 @@ pub struct EmuDebugger<'a> {
     stacks_widget: StackWidget,
     instructions_widget: InstructionWidget,
     memory_widget: MemoryWidget,
-    exit: bool, 
+    screen_widget: ScreenWidget,
+    exit: bool,
 }
 
 impl EmuDebugger<'_> {
-
     pub fn new(gb: &mut Gameboy) -> EmuDebugger<'_> {
         let instructions_widget = InstructionWidget::new(&gb.memory);
         let memory_widget = MemoryWidget::new();
         let stacks_widget = StackWidget::default();
+        let screen_widget = ScreenWidget::default();
 
         gb.cpu.run(&mut gb.memory);
 
@@ -48,7 +42,8 @@ impl EmuDebugger<'_> {
             stacks_widget,
             instructions_widget,
             memory_widget,
-            exit: false
+            screen_widget,
+            exit: false,
         }
     }
 
@@ -63,14 +58,18 @@ impl EmuDebugger<'_> {
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        let [memory, inst, reg, stack] = Layout::horizontal([
+        let [memory, inst, half] = Layout::horizontal([
             Constraint::Max(60),
             Constraint::Fill(1),
-            Constraint::Fill(1),
-            Constraint::Fill(1),
+            Constraint::Fill(2),
         ])
         .areas(frame.area());
 
+        let [screen, bottom] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(half);
+
+        let [reg, stack] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(bottom);
 
         let marked_address = vec![self.gb.cpu.pc];
         let mut memory_state = MemoryWidgetState::new(&self.gb.memory, marked_address);
@@ -79,16 +78,17 @@ impl EmuDebugger<'_> {
         frame.render_stateful_widget(&mut self.memory_widget, memory, &mut memory_state);
         frame.render_widget(&mut self.instructions_widget, inst);
 
+        frame.render_widget(ScreenWidget::default(), screen);
+
         frame.render_stateful_widget(&mut self.stacks_widget, stack, &mut stack_state);
         frame.render_widget(RegistersWidget::new(&self.gb.cpu), reg);
-
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event);
-            },
+            }
             _ => {}
         }
         Ok(())
@@ -106,14 +106,12 @@ impl EmuDebugger<'_> {
             KeyCode::Char('n') => {
                 self.gb.cpu.run(&mut self.gb.memory);
                 self.instructions_widget.state.select_next();
-
-            },
+            }
             KeyCode::Char('m') => {
                 for _ in 0..400 {
                     self.gb.cpu.run(&mut self.gb.memory);
                 }
             }
-            ,
             KeyCode::Char('g') => {
                 while (!self.gb.cpu.z()) {
                     self.gb.cpu.run(&mut self.gb.memory);
@@ -122,7 +120,7 @@ impl EmuDebugger<'_> {
             _ => (),
         }
 
-        self.instructions_widget.update_selected_instruction(self.gb.cpu.pc); 
+        self.instructions_widget
+            .update_selected_instruction(self.gb.cpu.pc);
     }
-
 }

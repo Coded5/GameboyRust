@@ -5,6 +5,7 @@ use std::io::Read;
 #[derive(Debug)]
 pub struct Memory {
     memory: [u8; 0x10000],
+    locked_byte: u8,
     lock_vram: bool,
 }
 
@@ -19,6 +20,7 @@ impl Memory {
         Memory {
             memory: [0_u8; 0x10000],
             lock_vram: false,
+            locked_byte: 0u8,
         }
     }
 
@@ -39,8 +41,16 @@ impl Memory {
         Ok(length)
     }
 
+    // pub fn get_mut_byte(&mut self, address: u16) -> Option<&mut u8> {
+    //     Some(&mut self.memory[address as usize])
+    // }
+
     pub fn get_mut_byte(&mut self, address: u16) -> &mut u8 {
-        &mut self.memory[address as usize]
+        if (self.lock_vram) {
+            &mut self.locked_byte
+        } else {
+            &mut self.memory[address as usize]
+        }
     }
 
     pub fn get_byte(&self, address: u16) -> u8 {

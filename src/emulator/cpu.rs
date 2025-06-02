@@ -96,7 +96,6 @@ impl Cpu {
             line.push_str(op2.get_str_format(byte, short).as_str());
         }
 
-        // println!("{}", line);
         line
     }
 
@@ -109,7 +108,7 @@ impl Cpu {
         //Fetch
         // let opcode_byte = memory.get_byte(self.pc);
         let opcode_byte = self.next_byte(memory);
-        println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
+        // println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
 
         //Decode
         let opcode = if (opcode_byte == 0xCB) {

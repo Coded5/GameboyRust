@@ -1,18 +1,39 @@
 use std::env;
 use std::io;
+use std::time::SystemTime;
 
-use gameboy::{emulator::gameboy::Gameboy, gui::debug_term_gui::EmuDebugger};
+use gameboy::devices::screen::Screen;
+use piston::EventSettings;
+use piston::Events;
+use piston::RenderEvent;
+// use gameboy::{emulator::gameboy::Gameboy, gui::debug_term_gui::EmuDebugger};
 
-fn main() -> io::Result<()> {
-    env::set_var("RUST_BACKTRACE", "1");
+// fn main() -> io::Result<()> {
+//     env::set_var("RUST_BACKTRACE", "1");
+//
+//     let mut gb: Gameboy = Gameboy::new();
+//     let _ = gb.memory.load_rom("./roms/mgb_boot.bin");
+//
+//     let mut terminal = ratatui::init();
+//     let app_result = EmuDebugger::new(&mut gb).run(&mut terminal);
+//     ratatui::restore();
+//     app_result
+// }
 
-    let mut gb: Gameboy = Gameboy::new();
-    let _ = gb.memory.load_rom("./roms/mgb_boot.bin");
+fn main() {
+    let mut screen = Screen::start(2);
+    let mut events = Events::new(EventSettings::new());
 
-    let mut terminal = ratatui::init();
-    let app_result = EmuDebugger::new(&mut gb).run(&mut terminal);
-    ratatui::restore();
-    app_result
+    // let mut last_time = SystemTime::now();
+
+    while let Some(e) = events.next(&mut screen.window) {
+        // let current_time = SystemTime::now();
+        // let deltaTime = current_time.duration_since(last_time).unwrap().as_millis();
+
+        if let Some(args) = e.render_args() {
+            screen.render(&args);
+        }
+    }
 }
 
 //TODO: Debug TUI
