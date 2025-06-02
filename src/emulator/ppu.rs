@@ -22,6 +22,7 @@ pub const OBP0: u16 = 0xFF48; //Obj palette 0
 pub const OBP1: u16 = 0xFF49; //Obj palette 1
 
 #[allow(non_camel_case_types)]
+#[derive(Debug)]
 pub enum PpuMode {
     OAM_SCAN, //Mode 2
     DRAW,     //Mode 3
@@ -29,6 +30,7 @@ pub enum PpuMode {
     VBLANK,   //Mode 1
 }
 
+#[derive(Debug)]
 pub struct Ppu {
     screen_buffer: [u8; 160 * 144],
     current_line_cycle: i32,
@@ -74,7 +76,7 @@ impl Ppu {
 
     fn next_scanline(&mut self, memory: &mut Memory) {
         let mut current_scanline: &mut u8 = memory.get_mut_byte(LY);
-        (*current_scanline).wrapping_add(1);
+        *current_scanline = (*current_scanline).wrapping_add(1);
 
         //Enter V-Blank
         if (*current_scanline >= 144) {
@@ -88,23 +90,32 @@ impl Ppu {
     }
 
     fn draw_pixel_fifo(&mut self, memory: &mut Memory) {
-        let x_position = 0;
         let y_position = memory.get_byte(LY); //current scanline
 
         let scx = memory.get_byte(SCX);
         let scy = memory.get_byte(SCY);
 
-        let tile_x = ((scx + x_position) / 8) as u16;
         let tile_y = ((scy + y_position) / 8) as u16;
 
-        //Background Fetch
-        let tile_index = memory.get_byte(TILEMAP_START_ADDR + tile_y * 32 + tile_x) as u16;
-
         let line_offset = (((scy + y_position) % 8) * 2) as u16;
-        let tile_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset;
 
-        let hi = memory.get_byte(tile_address);
-        let lo = memory.get_byte(tile_address + 1);
+        for x_position in 0..160 {
+            let tile_x = ((scx + x_position) / 8) as u16;
+            let tile_index = memory.get_byte(TILEMAP_START_ADDR + tile_y * 32 + tile_x) as u16;
+            let tile_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset;
+
+            let hi = memory.get_byte(tile_address);
+            let lo = memory.get_byte(tile_address + 1);
+
+            //HACK: naive render
+            for i in (0..8).rev() {
+                let hi_bit = (hi >> i) & 1;
+                let lo_bit = (lo >> i) & 1;
+
+                let pixel = (lo_bit << 1) | hi_bit;
+                self.screen_buffer[(x_position as usize) + (y_position as usize) * 144] = pixel;
+            }
+        }
     }
 
     fn background_fetch_fifo(&mut self, memory: &mut Memory) {}
@@ -118,12 +129,14 @@ impl Ppu {
                 if (self.current_mode_cycle >= 80) {
                     self.current_mode_cycle -= 80;
                     self.oam_buffer = self.oam_scan(memory);
-                    self.next_scanline(memory);
+                    self.mode = PpuMode::DRAW;
                 }
             }
             PpuMode::DRAW => {
                 //TODO: Write to screen buffer
-                todo!();
+                self.draw_pixel_fifo(memory);
+                self.next_scanline(memory);
+                self.mode = PpuMode::HBLANK;
             }
             PpuMode::HBLANK => {
                 if (self.current_line_cycle >= 456) {
@@ -139,6 +152,31 @@ impl Ppu {
                 }
             }
         }
+    }
+
+    pub fn get_video_buffer_rgba(&self) -> Vec<u8> {
+        let mut frame_buffer: Vec<u8> = Vec::new();
+
+        //TODO: Obey GB Palette
+        //TODO: Change temoporary color
+        for pixel in self.screen_buffer {
+            let mut pixel_data: Vec<u8> = match pixel {
+                0 => vec![0, 0, 0, 255],
+                1 => vec![60, 60, 60, 255],
+                2 => vec![120, 120, 120, 255],
+                3 => vec![240, 240, 240, 255],
+                _ => panic!("Invalid pixel"),
+            };
+
+            frame_buffer.append(&mut pixel_data);
+        }
+
+        frame_buffer
+    }
+
+    //HACK: Temporary remove me
+    pub fn is_vblank(&self) -> bool {
+        matches!(self.mode, PpuMode::VBLANK)
     }
 }
 

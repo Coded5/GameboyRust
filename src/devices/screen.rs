@@ -10,6 +10,7 @@ pub struct Screen {
     gl: GlGraphics,
     pub window: Window,
     scale: u32,
+    frame: Vec<u8>,
 }
 
 impl Screen {
@@ -25,6 +26,7 @@ impl Screen {
             gl: GlGraphics::new(OpenGL::V3_2),
             window,
             scale,
+            frame: vec![0u8; 160 * 144 * 4],
         }
     }
 
@@ -42,7 +44,8 @@ impl Screen {
         }
 
         let img_buffer: ImageBuffer<Rgba<u8>, Vec<u8>> =
-            ImageBuffer::from_raw(160, 144, data).expect("Failed to create image buffer");
+            ImageBuffer::from_raw(160, 144, self.frame.clone())
+                .expect("Failed to create image buffer");
 
         let texture = Texture::from_image(&img_buffer, &settings);
 
@@ -55,5 +58,11 @@ impl Screen {
                 gl,
             );
         })
+    }
+
+    pub fn set_frame_from_buffer(&mut self, buffer: Vec<u8>) {
+        assert_eq!(buffer.len(), 160 * 144 * 4);
+
+        self.frame = buffer.clone();
     }
 }
