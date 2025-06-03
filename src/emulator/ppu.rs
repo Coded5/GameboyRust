@@ -53,11 +53,11 @@ pub struct Ppu {
     mode: PpuMode,
 }
 
-impl Ppu {
-    pub fn get_lcdc(&self, memory: &Memory, control: u8) -> bool {
-        (memory.get_byte(LCDC) >> control) & 1 == 1
-    }
+pub fn get_lcdc(memory: &Memory, control: u8) -> bool {
+    (memory.get_byte(LCDC) >> control) & 1 == 1
+}
 
+impl Ppu {
     fn oam_scan(&mut self, memory: &mut Memory) -> Vec<u16> {
         //OAM $FE00 - $FE9F
 
@@ -107,72 +107,25 @@ impl Ppu {
         }
     }
 
-    fn draw_pixel_fifo(&mut self, memory: &mut Memory) {
-        let y_position = memory.get_byte(LY);
+    fn draw_lcd(&mut self, memory: &mut Memory) {
+        let y = memory.get_byte(LY);
 
         let scx = memory.get_byte(SCX);
         let scy = memory.get_byte(SCY);
 
-        let tile_y = ((scy + y_position) / 8) as u16;
-        let line_offset = (scy.wrapping_add(y_position) % 8) as u16;
+        let wx = memory.get_byte(WX);
+        let wy = memory.get_byte(WY);
 
-        for x_position in 0..160 {
-            //Window
-            let wx = memory.get_byte(WX);
-            let wy = memory.get_byte(WY);
+        let is_8000 = get_lcdc(memory, LCDC_BG_WIN_TILE);
 
-            if (x_position >= wx - 7 && y_position >= wy && self.get_lcdc(memory, LCDC_WIN_ENABLE))
-            {
-                //LCDC.6
-                //Window tile map area:
-                //0 -> $9800-$9BFF
-                //1 -> $9C00-$9FFF
+        for x in 0..160 {
+            let is_window = get_lcdc(memory, LCDC_WIN_ENABLE) && (x >= wx - 7) && (y >= wy);
 
-                let lcdc = memory.get_byte(LCDC);
-                let window_tilemap_addr = if self.get_lcdc(memory, LCDC_WIN_TILEMAP) {
-                    0x9C00
-                } else {
-                    0x9800
-                };
-
-                let relative_x = x_position + 7 - wx;
-                let relative_y = y_position - wy;
-
-                let tile_x = ((relative_x / 8) & 0x1F) as u16;
-                let tile_y = (relative_y / 8) as u16;
-                let tile_index = memory.get_byte(window_tilemap_addr + tile_x + tile_y * 32) as u16;
-
-                let window_line_offset = (relative_y % 8) as u16;
-
-                let is_8000 = (memory.get_byte(LCDC) >> 4) & 1 == 1;
-                let tile_address = if is_8000 {
-                    TILEDATA_START_ADDR + tile_index * 16 + window_line_offset * 2
-                } else {
-                    let index = tile_index as i8 as i16;
-                    0x9000u16.wrapping_add_signed(index * 16)
-                };
-
-                let lo = memory.get_byte(tile_address);
-                let hi = memory.get_byte(tile_address + 1);
-
-                let pixel_in_tile = relative_x % 8;
-
-                //HACK: naive render
-                let bit_index = 7 - pixel_in_tile;
-                let lo_bit = (lo >> bit_index) & 1;
-                let hi_bit = (hi >> bit_index) & 1;
-
-                let pixel = (hi_bit << 1) | lo_bit;
-                self.screen_buffer[(x_position as usize) + (y_position as usize) * 160] = pixel;
-
-                continue;
-            }
-
-            //Background
-            let tile_x = (((scx.wrapping_add(x_position)) / 8) & 0x1F) as u16;
-            let tile_index = memory.get_byte(TILEMAP_START_ADDR + tile_y * 32 + tile_x) as u16;
-
-            let is_8000 = (memory.get_byte(LCDC) >> 4) & 1 == 1;
+            let (tile_index, line_offset, shift) = if is_window {
+                self.fetch_window_tile(x, y, wx, wy, memory)
+            } else {
+                self.fetch_background_tile(x, y, scx, scy, memory)
+            };
 
             let tile_address = if is_8000 {
                 TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2
@@ -184,16 +137,62 @@ impl Ppu {
             let lo = memory.get_byte(tile_address);
             let hi = memory.get_byte(tile_address + 1);
 
-            let pixel_in_tile = (scx + x_position) % 8;
-
             //HACK: naive render
-            let bit_index = 7 - pixel_in_tile;
-            let lo_bit = (lo >> bit_index) & 1;
-            let hi_bit = (hi >> bit_index) & 1;
+            let lo_bit = (lo >> shift) & 1;
+            let hi_bit = (hi >> shift) & 1;
 
             let pixel = (hi_bit << 1) | lo_bit;
-            self.screen_buffer[(x_position as usize) + (y_position as usize) * 160] = pixel;
+            self.screen_buffer[(x as usize) + (y as usize) * 160] = pixel;
         }
+    }
+
+    fn fetch_window_tile(&self, x: u8, y: u8, wx: u8, wy: u8, memory: &Memory) -> (u16, u16, u8) {
+        let relative_x = x + 7 - wx;
+        let relative_y = y - wy;
+
+        let line_offset = (relative_y % 8) as u16;
+
+        let window_tilemap_addr = if get_lcdc(memory, LCDC_WIN_TILEMAP) {
+            0x9C00
+        } else {
+            0x9800
+        };
+
+        let shift = 7 - (relative_x % 8);
+
+        let tile_x = ((relative_x / 8) & 0x1F) as u16;
+        let tile_y = (relative_y / 8) as u16;
+        (
+            memory.get_byte(window_tilemap_addr + tile_x + tile_y * 32) as u16,
+            line_offset,
+            shift,
+        )
+    }
+
+    fn fetch_background_tile(
+        &self,
+        x: u8,
+        y: u8,
+        scx: u8,
+        scy: u8,
+        memory: &Memory,
+    ) -> (u16, u16, u8) {
+        let tile_x = ((scx.wrapping_add(x) / 8) & 0x1F) as u16;
+        let tile_y = (scy.wrapping_add(y) / 8) as u16;
+
+        let line_offset = (scy.wrapping_add(y) % 8) as u16;
+
+        let bg_tilemap_addr = if (get_lcdc(memory, LCDC_BG_TILEMAP)) {
+            0x9C00
+        } else {
+            0x9800
+        };
+
+        (
+            memory.get_byte(bg_tilemap_addr + tile_y * 32 + tile_x) as u16,
+            line_offset,
+            (scx + x) % 8,
+        )
     }
 
     pub fn update(&mut self, cycles: i32, memory: &mut Memory) {
@@ -209,8 +208,7 @@ impl Ppu {
                 }
             }
             PpuMode::DRAW => {
-                //TODO: Write to screen buffer
-                self.draw_pixel_fifo(memory);
+                self.draw_lcd(memory);
                 self.mode = PpuMode::HBLANK;
             }
             PpuMode::HBLANK => {

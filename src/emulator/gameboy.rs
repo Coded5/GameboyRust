@@ -124,9 +124,10 @@ impl Gameboy {
         *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
         *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
 
-        //WY, WX
+        //WY, WX Defaulted at 0x00
         *(self.memory.get_mut_byte(0xFF4A)) = 20;
         *(self.memory.get_mut_byte(0xFF4B)) = 20;
+
         *(self.memory.get_mut_byte(0xFFFF)) = 0x00;
 
         // *self.memory.get_mut_byte(SCX) = 6;
