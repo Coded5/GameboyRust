@@ -60,27 +60,31 @@ impl Gameboy {
             0x00, 0x00,
         ];
 
+        let tile_spr: [u8; 16] = [
+            0x00, 0xFF, 0x02, 0x81, 0x26, 0xA5, 0x26, 0xA5, 0x02, 0x81, 0x42, 0xC3, 0x3E, 0xBD,
+            0x00, 0xFF,
+        ];
+
         for i in 0..16 {
             *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
+            *(self.memory.get_mut_byte(0x8000 + (i + 32) as u16)) = tile_spr[i];
         }
 
         for i in (0x9C00..=0x9FFF) {
             *(self.memory.get_mut_byte(i)) = 1u8;
         }
 
-        // *self.memory.get_mut_byte(0x9801) = 1u8;
-        // *self.memory.get_mut_byte(0x9800) = 1u8;
-        // *self.memory.get_mut_byte(0x9800 + 1 + 32) = 1u8;
-        // *self.memory.get_mut_byte(0x9800 + 2 + 64) = 1u8;
-        // *self.memory.get_mut_byte(0x9800) = 1u8;
-        // *self.memory.get_mut_byte(0x9800) = 1u8;
-        // *self.memory.get_mut_byte(0x9800) = 1u8
-        // *self.memory.get_mut_byte(0x9800) = 1u8;
+        //OAM
+        let y = 16u8;
+        let x = 8u8;
+        let tile_number = 2u8;
+        let spr_flags = 0u8;
 
-        // for i in 0..32 {
-        //     *self.memory.get_mut_byte(0x9800 + i + 32 * i) = 1u8;
-        // }
+        *(self.memory.get_mut_byte(0xFE00)) = y;
+        *(self.memory.get_mut_byte(0xFE00 + 1)) = x;
+        *(self.memory.get_mut_byte(0xFE00 + 2)) = tile_number;
+        *(self.memory.get_mut_byte(0xFE00 + 3)) = spr_flags;
     }
 
     pub fn set_gb_initial_state(&mut self) {
@@ -115,7 +119,7 @@ impl Gameboy {
 
         //LCDC
         *(self.memory.get_mut_byte(0xFF40)) =
-            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE);
+            0x91 | (1 << LCDC_WIN_TILEMAP) | (0 << LCDC_WIN_ENABLE);
 
         *(self.memory.get_mut_byte(0xFF42)) = 0x00;
         *(self.memory.get_mut_byte(0xFF43)) = 0x00;

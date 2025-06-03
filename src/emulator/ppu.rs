@@ -58,14 +58,14 @@ pub fn get_lcdc(memory: &Memory, control: u8) -> bool {
 }
 
 impl Ppu {
-    fn oam_scan(&mut self, memory: &mut Memory) -> Vec<u16> {
+    fn oam_scan(&mut self, memory: &mut Memory) {
         //OAM $FE00 - $FE9F
 
         let memory_iter = (OAM_START_ADDR..OAM_END_ADDR).step_by(4);
         let is_tall_sprite = (memory.get_byte(LCDC) >> 2) & 0x1 == 1;
         let ly = memory.get_byte(LY);
 
-        let mut oam_buffer: Vec<u16> = Vec::new();
+        self.oam_buffer = Vec::new();
 
         for addr in memory_iter {
             let y_pos = memory.get_byte(addr);
@@ -73,7 +73,7 @@ impl Ppu {
             let tile_index = memory.get_byte(addr + 2);
             let attributes = memory.get_byte(addr + 3);
 
-            //Sprite X-Position must be greater than 0
+            // Sprite X-Position must be greater than 0
             //LY + 16 must be greater than or equal to Sprite Y-Position
             //LY + 16 must be less than Sprite Y-Position + Srite Height (8 in Normal Mode, 16 in Tall-Sprite-Mode)
             //The amount of sprites already stored in the OAM Buffer must be less than 10
@@ -83,13 +83,11 @@ impl Ppu {
             if (x_pos > 0
                 && ly + 16 >= y_pos
                 && ly + 16 < y_pos + sprite_height
-                && oam_buffer.len() < 10)
+                && self.oam_buffer.len() < 10)
             {
-                oam_buffer.push(addr);
+                self.oam_buffer.push(addr);
             }
         }
-
-        oam_buffer
     }
 
     fn next_scanline(&mut self, memory: &mut Memory) {
@@ -195,6 +193,45 @@ impl Ppu {
         )
     }
 
+    //NOTE: Ignore OBJ Priority for now.
+    fn draw_lcd_sprite(&mut self, memory: &mut Memory) {
+        let y = memory.get_byte(LY);
+
+        let scx = memory.get_byte(SCX);
+        let scy = memory.get_byte(SCY);
+
+        for &oam_entry_addr in self.oam_buffer.iter() {
+            let yy = memory.get_byte(oam_entry_addr);
+            let xx = memory.get_byte(oam_entry_addr + 1);
+            let tile_index = memory.get_byte(oam_entry_addr + 2) as u16;
+            let _obj_flags = memory.get_byte(oam_entry_addr + 3);
+
+            let line_offset = scy.wrapping_add(y).wrapping_add(16).wrapping_sub(yy) as u16;
+
+            let line_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2;
+
+            let lo = memory.get_byte(line_address);
+            let hi = memory.get_byte(line_address + 1);
+
+            //HACK: naive render!
+            //8x16 sprite not suported!
+            for bit in 0..8 {
+                let lo_bit = (lo >> (7 - bit)) & 1;
+                let hi_bit = (hi >> (7 - bit)) & 1;
+                let pixel = (hi_bit << 1) | lo_bit;
+
+                if pixel == 0 {
+                    continue;
+                }
+
+                let screen_x = xx.wrapping_sub(8).wrapping_add(bit);
+                if screen_x < 160 {
+                    self.screen_buffer[(screen_x as usize) + (y as usize) * 160] = pixel;
+                }
+            }
+        }
+    }
+
     pub fn update(&mut self, cycles: i32, memory: &mut Memory) {
         self.current_line_cycle += cycles;
         self.current_mode_cycle += cycles;
@@ -203,12 +240,14 @@ impl Ppu {
             PpuMode::OAM_SCAN => {
                 if (self.current_mode_cycle >= 80) {
                     self.current_mode_cycle -= 80;
-                    self.oam_buffer = self.oam_scan(memory);
+                    self.oam_scan(memory);
                     self.mode = PpuMode::DRAW;
                 }
             }
             PpuMode::DRAW => {
+                //TODO: Pixel FIFO
                 self.draw_lcd(memory);
+                self.draw_lcd_sprite(memory);
                 self.mode = PpuMode::HBLANK;
             }
             PpuMode::HBLANK => {

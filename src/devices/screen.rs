@@ -60,6 +60,7 @@ impl Screen {
         })
     }
 
+    //TODO: Improve this
     pub fn set_frame_from_buffer(&mut self, buffer: Vec<u8>) {
         assert_eq!(buffer.len(), 160 * 144 * 4);
 
