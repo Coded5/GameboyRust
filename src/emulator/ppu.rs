@@ -1,5 +1,8 @@
 use super::memory::Memory;
 
+pub const SCREEN_WIDTH: u8 = 160;
+pub const SCREEN_HEIGHT: u8 = 144;
+
 pub const TILEDATA_START_ADDR: u16 = 0x8000;
 pub const TILEDATA_END_ADDR: u16 = 0x97FF;
 
@@ -20,6 +23,17 @@ pub const LYC: u16 = 0xFF45; //Compare LY to trigger STAT interrupt (???)
 pub const BGP: u16 = 0xFF47; //Background Palette
 pub const OBP0: u16 = 0xFF48; //Obj palette 0
 pub const OBP1: u16 = 0xFF49; //Obj palette 1
+pub const WY: u16 = 0xFF4A;
+pub const WX: u16 = 0xFF4B;
+
+pub const LCDC_PRIORITY: u8 = 0;
+pub const LCDC_OBJ_ENABLE: u8 = 1;
+pub const LCDC_OBJ_SIZE: u8 = 2;
+pub const LCDC_BG_TILEMAP: u8 = 3;
+pub const LCDC_BG_WIN_TILE: u8 = 4;
+pub const LCDC_WIN_ENABLE: u8 = 5;
+pub const LCDC_WIN_TILEMAP: u8 = 6;
+pub const LCDC_PPU_ENABLE: u8 = 7;
 
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
@@ -40,6 +54,10 @@ pub struct Ppu {
 }
 
 impl Ppu {
+    pub fn get_lcdc(&self, memory: &Memory, control: u8) -> bool {
+        (memory.get_byte(LCDC) >> control) & 1 == 1
+    }
+
     fn oam_scan(&mut self, memory: &mut Memory) -> Vec<u16> {
         //OAM $FE00 - $FE9F
 
@@ -90,36 +108,93 @@ impl Ppu {
     }
 
     fn draw_pixel_fifo(&mut self, memory: &mut Memory) {
-        let y_position = memory.get_byte(LY); //current scanline
+        let y_position = memory.get_byte(LY);
 
         let scx = memory.get_byte(SCX);
         let scy = memory.get_byte(SCY);
 
         let tile_y = ((scy + y_position) / 8) as u16;
-        let line_offset = ((scy + y_position) % 8) as u16;
+        let line_offset = (scy.wrapping_add(y_position) % 8) as u16;
 
         for x_position in 0..160 {
-            // let tile_x = ((scx + x_position) / 8) as u16;
-            let tile_x = (((scx + x_position) / 8) & 0x1F) as u16;
-            let tile_index = memory.get_byte(TILEMAP_START_ADDR + tile_y * 32 + tile_x) as u16;
-            let tile_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2;
+            //Window
+            let wx = memory.get_byte(WX);
+            let wy = memory.get_byte(WY);
 
-            let hi = memory.get_byte(tile_address);
-            let lo = memory.get_byte(tile_address + 1);
+            if (x_position >= wx - 7 && y_position >= wy && self.get_lcdc(memory, LCDC_WIN_ENABLE))
+            {
+                //LCDC.6
+                //Window tile map area:
+                //0 -> $9800-$9BFF
+                //1 -> $9C00-$9FFF
+
+                let lcdc = memory.get_byte(LCDC);
+                let window_tilemap_addr = if self.get_lcdc(memory, LCDC_WIN_TILEMAP) {
+                    0x9C00
+                } else {
+                    0x9800
+                };
+
+                let relative_x = x_position + 7 - wx;
+                let relative_y = y_position - wy;
+
+                let tile_x = ((relative_x / 8) & 0x1F) as u16;
+                let tile_y = (relative_y / 8) as u16;
+                let tile_index = memory.get_byte(window_tilemap_addr + tile_x + tile_y * 32) as u16;
+
+                let window_line_offset = (relative_y % 8) as u16;
+
+                let is_8000 = (memory.get_byte(LCDC) >> 4) & 1 == 1;
+                let tile_address = if is_8000 {
+                    TILEDATA_START_ADDR + tile_index * 16 + window_line_offset * 2
+                } else {
+                    let index = tile_index as i8 as i16;
+                    0x9000u16.wrapping_add_signed(index * 16)
+                };
+
+                let lo = memory.get_byte(tile_address);
+                let hi = memory.get_byte(tile_address + 1);
+
+                let pixel_in_tile = relative_x % 8;
+
+                //HACK: naive render
+                let bit_index = 7 - pixel_in_tile;
+                let lo_bit = (lo >> bit_index) & 1;
+                let hi_bit = (hi >> bit_index) & 1;
+
+                let pixel = (hi_bit << 1) | lo_bit;
+                self.screen_buffer[(x_position as usize) + (y_position as usize) * 160] = pixel;
+
+                continue;
+            }
+
+            //Background
+            let tile_x = (((scx.wrapping_add(x_position)) / 8) & 0x1F) as u16;
+            let tile_index = memory.get_byte(TILEMAP_START_ADDR + tile_y * 32 + tile_x) as u16;
+
+            let is_8000 = (memory.get_byte(LCDC) >> 4) & 1 == 1;
+
+            let tile_address = if is_8000 {
+                TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2
+            } else {
+                let index = tile_index as i8 as i16;
+                0x9000u16.wrapping_add_signed(index * 16)
+            };
+
+            let lo = memory.get_byte(tile_address);
+            let hi = memory.get_byte(tile_address + 1);
 
             let pixel_in_tile = (scx + x_position) % 8;
 
             //HACK: naive render
             let bit_index = 7 - pixel_in_tile;
-            let hi_bit = (hi >> bit_index) & 1;
             let lo_bit = (lo >> bit_index) & 1;
+            let hi_bit = (hi >> bit_index) & 1;
 
-            let pixel = (lo_bit << 1) | hi_bit;
+            let pixel = (hi_bit << 1) | lo_bit;
             self.screen_buffer[(x_position as usize) + (y_position as usize) * 160] = pixel;
         }
     }
-
-    fn background_fetch_fifo(&mut self, memory: &mut Memory) {}
 
     pub fn update(&mut self, cycles: i32, memory: &mut Memory) {
         self.current_line_cycle += cycles;

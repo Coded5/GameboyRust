@@ -1,6 +1,10 @@
 use crate::devices::screen::Screen;
 
-use super::{cpu::Cpu, memory::Memory, ppu::Ppu};
+use super::{
+    cpu::Cpu,
+    memory::Memory,
+    ppu::{Ppu, LCDC, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
+};
 
 #[derive(Debug)]
 pub struct Gameboy {
@@ -57,12 +61,26 @@ impl Gameboy {
         ];
 
         for i in 0..16 {
-            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_1[i];
-            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_00[i];
+            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
+            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
+        }
+
+        for i in (0x9C00..=0x9FFF) {
+            *(self.memory.get_mut_byte(i)) = 1u8;
         }
 
         // *self.memory.get_mut_byte(0x9801) = 1u8;
-        *self.memory.get_mut_byte(0x9800) = 1u8;
+        // *self.memory.get_mut_byte(0x9800) = 1u8;
+        // *self.memory.get_mut_byte(0x9800 + 1 + 32) = 1u8;
+        // *self.memory.get_mut_byte(0x9800 + 2 + 64) = 1u8;
+        // *self.memory.get_mut_byte(0x9800) = 1u8;
+        // *self.memory.get_mut_byte(0x9800) = 1u8;
+        // *self.memory.get_mut_byte(0x9800) = 1u8
+        // *self.memory.get_mut_byte(0x9800) = 1u8;
+
+        // for i in 0..32 {
+        //     *self.memory.get_mut_byte(0x9800 + i + 32 * i) = 1u8;
+        // }
     }
 
     pub fn set_gb_initial_state(&mut self) {
@@ -94,16 +112,25 @@ impl Gameboy {
         *(self.memory.get_mut_byte(0xFF24)) = 0x77;
         *(self.memory.get_mut_byte(0xFF25)) = 0xF3;
         *(self.memory.get_mut_byte(0xFF26)) = 0xF1;
-        *(self.memory.get_mut_byte(0xFF40)) = 0x91;
+
+        //LCDC
+        *(self.memory.get_mut_byte(0xFF40)) =
+            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE);
+
         *(self.memory.get_mut_byte(0xFF42)) = 0x00;
         *(self.memory.get_mut_byte(0xFF43)) = 0x00;
         *(self.memory.get_mut_byte(0xFF45)) = 0x00;
         *(self.memory.get_mut_byte(0xFF47)) = 0xFC;
         *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
         *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
-        *(self.memory.get_mut_byte(0xFF4A)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF4B)) = 0x00;
+
+        //WY, WX
+        *(self.memory.get_mut_byte(0xFF4A)) = 20;
+        *(self.memory.get_mut_byte(0xFF4B)) = 20;
         *(self.memory.get_mut_byte(0xFFFF)) = 0x00;
+
+        // *self.memory.get_mut_byte(SCX) = 6;
+        // *self.memory.get_mut_byte(SCY) = 6;
     }
 }
 
