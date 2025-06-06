@@ -1,4 +1,7 @@
-use super::memory::Memory;
+use super::{
+    cpu::{request_interrupt, INT_LCD, INT_VBLANK},
+    memory::Memory,
+};
 
 pub const SCREEN_WIDTH: u8 = 160;
 pub const SCREEN_HEIGHT: u8 = 144;
@@ -35,6 +38,11 @@ pub const LCDC_WIN_ENABLE: u8 = 5;
 pub const LCDC_WIN_TILEMAP: u8 = 6;
 pub const LCDC_PPU_ENABLE: u8 = 7;
 
+pub const STAT_LYC_INT: u8 = 6;
+pub const STAT_MODE2_INT: u8 = 5;
+pub const STAT_MODE1_INT: u8 = 4;
+pub const STAT_MODE0_INT: u8 = 3;
+
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum PpuMode {
@@ -55,6 +63,18 @@ pub struct Ppu {
 
 pub fn get_lcdc(memory: &Memory, control: u8) -> bool {
     (memory.get_byte(LCDC) >> control) & 1 == 1
+}
+
+pub fn reset_stat(memory: &mut Memory, stat: u8) {
+    *memory.get_mut_byte(STAT) &= !(1 << stat);
+}
+
+pub fn set_stat(memory: &mut Memory, stat: u8) {
+    *memory.get_mut_byte(STAT) |= (1 << stat);
+}
+
+pub fn test_stat(memory: &Memory, stat: u8) -> bool {
+    (memory.get_byte(STAT) >> stat) & 1 == 1
 }
 
 impl Ppu {
@@ -97,7 +117,6 @@ impl Ppu {
         //Enter V-Blank
         if (*current_scanline >= 144) {
             self.mode = PpuMode::VBLANK;
-            //TODO: Request interrupt here?
         } else if (*current_scanline > 155) {
             *current_scanline = 0;
         } else {
@@ -305,6 +324,44 @@ impl Ppu {
                 }
             }
         }
+
+        let lyc = memory.get_byte(LYC);
+        let ly = memory.get_byte(LY);
+
+        if lyc == ly {
+            //SET LYC == LY
+            set_stat(memory, 2);
+
+            if test_stat(memory, STAT_LYC_INT) {
+                request_interrupt(INT_LCD, memory);
+            }
+        }
+
+        let mut set_ppu_mode: u8 = 0;
+        match self.mode {
+            PpuMode::VBLANK => {
+                set_ppu_mode = 1;
+                request_interrupt(INT_VBLANK, memory);
+            }
+            PpuMode::HBLANK => {
+                set_ppu_mode = 0;
+                if test_stat(memory, STAT_MODE0_INT) {
+                    request_interrupt(INT_LCD, memory);
+                }
+            }
+            PpuMode::OAM_SCAN => {
+                set_ppu_mode = 2;
+                if test_stat(memory, STAT_MODE2_INT) {
+                    request_interrupt(INT_LCD, memory);
+                }
+            }
+            PpuMode::DRAW => {
+                set_ppu_mode = 3;
+            }
+        }
+
+        *memory.get_mut_byte(STAT) &= !3;
+        *memory.get_mut_byte(STAT) |= set_ppu_mode;
     }
 }
 

@@ -27,21 +27,11 @@ impl Gameboy {
     }
 
     pub fn tick(&mut self) {
-        // let max_cycle = 69905;
-        // let mut current_cycle = 0;
-        //
-        // while (current_cycle < max_cycle) {
-        //     let cycles = self.cpu.run(&mut self.memory);
-        //     current_cycle += cycles;
-        //
-        //     //update_timer(cycles);
-        //     //update_ppu(cycles);
-        //     //perform_interrupt();
-        //     //render();
-        // }
-        //
-
+        let cycle = self.cpu.run(&mut self.memory);
+        //TODO:
+        // self.timer.update(cycle, &mut self.memory);
         self.ppu.update(100, &mut self.memory);
+        self.cpu.perform_interrupt(&mut self.memory);
     }
 
     //HACK: Remove this
@@ -66,8 +56,8 @@ impl Gameboy {
         ];
 
         for i in 0..16 {
-            // *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
-            // *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
+            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
+            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 32) as u16)) = tile_spr[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 48) as u16)) = tile_00[i];
         }
