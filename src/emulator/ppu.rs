@@ -116,6 +116,8 @@ impl Ppu {
 
         let is_8000 = get_lcdc(memory, LCDC_BG_WIN_TILE);
 
+        let palette = memory.get_byte(BGP);
+
         for x in 0..160 {
             let is_window = get_lcdc(memory, LCDC_WIN_ENABLE) && (x >= wx - 7) && (y >= wy);
 
@@ -140,7 +142,10 @@ impl Ppu {
             let hi_bit = (hi >> shift) & 1;
 
             let pixel = (hi_bit << 1) | lo_bit;
-            self.screen_buffer[(x as usize) + (y as usize) * 160] = pixel;
+
+            let color = (palette >> (pixel * 2)) & 0x03;
+
+            self.screen_buffer[(x as usize) + (y as usize) * 160] = color;
         }
     }
 
@@ -236,6 +241,12 @@ impl Ppu {
             let lo = memory.get_byte(line_address);
             let hi = memory.get_byte(line_address + 1);
 
+            let pallete = if ((obj_flags >> 4) & 1 == 0) {
+                memory.get_byte(OBP0)
+            } else {
+                memory.get_byte(OBP1)
+            };
+
             //HACK: naive render!
             for bit in 0..8 {
                 let shift = if flip_x { bit } else { 7 - bit };
@@ -255,7 +266,8 @@ impl Ppu {
                         continue;
                     }
 
-                    self.screen_buffer[(screen_x as usize) + (y as usize) * 160] = pixel;
+                    let color = (pallete >> (pixel * 2)) & 0x3;
+                    self.screen_buffer[(screen_x as usize) + (y as usize) * 160] = color;
                 }
             }
         }

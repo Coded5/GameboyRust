@@ -125,12 +125,16 @@ impl Gameboy {
         *(self.memory.get_mut_byte(0xFF40)) =
             0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE);
 
+        *(self.memory.get_mut_byte(0xFF47)) = !0xE4;
+        *(self.memory.get_mut_byte(0xFF48)) = !0xE4;
+        *(self.memory.get_mut_byte(0xFF49)) = !0xE4;
+
         *(self.memory.get_mut_byte(0xFF42)) = 0x00;
         *(self.memory.get_mut_byte(0xFF43)) = 0x00;
         *(self.memory.get_mut_byte(0xFF45)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF47)) = 0xFC;
-        *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
-        *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
+        // *(self.memory.get_mut_byte(0xFF47)) = 0xFC;
+        // *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
+        // *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
 
         //WY, WX Defaulted at 0x00
         *(self.memory.get_mut_byte(0xFF4A)) = 20;
