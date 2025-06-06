@@ -66,8 +66,8 @@ impl Gameboy {
         ];
 
         for i in 0..16 {
-            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
-            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
+            // *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
+            // *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 32) as u16)) = tile_spr[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 48) as u16)) = tile_00[i];
         }
@@ -76,11 +76,14 @@ impl Gameboy {
             *(self.memory.get_mut_byte(i)) = 1u8;
         }
 
+        let flip_x = 5u8;
+        let flip_y = 6u8;
+
         //OAM
         let y = 20u8;
         let x = 16u8;
         let tile_number = 2u8;
-        let spr_flags = 0u8;
+        let spr_flags = (1 << flip_x) | (1 << flip_y);
 
         *(self.memory.get_mut_byte(0xFE00)) = y;
         *(self.memory.get_mut_byte(0xFE00 + 1)) = x;

@@ -210,9 +210,16 @@ impl Ppu {
             let sprite_x = memory.get_byte(oam_entry_addr + 1);
 
             let mut tile_index = memory.get_byte(oam_entry_addr + 2) as u16;
-            let _obj_flags = memory.get_byte(oam_entry_addr + 3);
+            let obj_flags = memory.get_byte(oam_entry_addr + 3);
 
-            let pixel_y = y.wrapping_sub(sprite_y).wrapping_add(16);
+            let flip_x = (obj_flags >> 5) & 1 == 1;
+            let flip_y = (obj_flags >> 6) & 1 == 1;
+
+            let mut pixel_y = y.wrapping_sub(sprite_y).wrapping_add(16);
+
+            if (flip_y) {
+                pixel_y = sprite_height - 1 - pixel_y;
+            }
 
             tile_index &= if get_lcdc(memory, LCDC_OBJ_SIZE) {
                 0xFE
@@ -222,7 +229,7 @@ impl Ppu {
 
             tile_index += if pixel_y >= 8 { 1 } else { 0 };
 
-            let line_offset = (y.wrapping_add(16).wrapping_sub(sprite_y) % 8) as u16;
+            let line_offset = (pixel_y % 8) as u16;
 
             let line_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2;
 
@@ -232,8 +239,9 @@ impl Ppu {
             //HACK: naive render!
             //8x16 sprite not suported!
             for bit in 0..8 {
-                let lo_bit = (lo >> (7 - bit)) & 1;
-                let hi_bit = (hi >> (7 - bit)) & 1;
+                let shift = if flip_x { bit } else { 7 - bit };
+                let lo_bit = (lo >> shift) & 1;
+                let hi_bit = (hi >> shift) & 1;
                 let pixel = (hi_bit << 1) | lo_bit;
 
                 if pixel == 0 {
@@ -319,3 +327,9 @@ impl Default for Ppu {
         }
     }
 }
+
+//TODO:
+//Sprite's flip X, Y
+//OBJ Palette
+//
+//Pixel FIFO (?)
