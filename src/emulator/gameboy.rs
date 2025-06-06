@@ -22,7 +22,11 @@ impl Gameboy {
         }
     }
 
-    pub fn tick(&mut self, screen: &mut Screen) {
+    pub fn get_frame_buffer(&self) -> &[u8; 160 * 144] {
+        &self.ppu.frame_buffer
+    }
+
+    pub fn tick(&mut self) {
         // let max_cycle = 69905;
         // let mut current_cycle = 0;
         //
@@ -37,11 +41,7 @@ impl Gameboy {
         // }
         //
 
-        self.ppu.update(60, &mut self.memory);
-
-        if (self.ppu.is_vblank()) {
-            screen.set_frame_from_buffer(self.ppu.get_video_buffer_rgba());
-        }
+        self.ppu.update(100, &mut self.memory);
     }
 
     //HACK: Remove this

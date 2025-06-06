@@ -30,21 +30,12 @@ impl Screen {
         }
     }
 
-    pub fn render(&mut self, args: &RenderArgs) {
+    pub fn render(&mut self, args: &RenderArgs, screen_buffer: &[u8; 160 * 144]) {
         let mut settings = TextureSettings::new();
         settings.set_filter(Filter::Nearest);
 
-        let mut data: Vec<u8> = vec![0u8; 160 * 144 * 4];
-
-        for i in (0..data.len()).step_by(4) {
-            data[i] = (i % 255) as u8;
-            data[i + 1] = ((i + 100) % 255) as u8;
-            data[i + 2] = ((i + 200) % 255) as u8;
-            data[i + 3] = 0xFF;
-        }
-
         let img_buffer: ImageBuffer<Rgba<u8>, Vec<u8>> =
-            ImageBuffer::from_raw(160, 144, self.frame.clone())
+            ImageBuffer::from_raw(160, 144, self.get_video_buffer_rgba(screen_buffer))
                 .expect("Failed to create image buffer");
 
         let texture = Texture::from_image(&img_buffer, &settings);
@@ -60,10 +51,21 @@ impl Screen {
         })
     }
 
-    //TODO: Improve this
-    pub fn set_frame_from_buffer(&mut self, buffer: Vec<u8>) {
-        assert_eq!(buffer.len(), 160 * 144 * 4);
+    pub fn get_video_buffer_rgba(&self, buffer: &[u8; 160 * 144]) -> Vec<u8> {
+        let mut frame_buffer: Vec<u8> = Vec::new();
 
-        self.frame = buffer.clone();
+        for pixel in buffer {
+            let mut pixel_data: Vec<u8> = match pixel {
+                3 => vec![0, 0, 0, 255],
+                2 => vec![60, 60, 60, 255],
+                1 => vec![120, 120, 120, 255],
+                0 => vec![240, 240, 240, 255],
+                _ => panic!("Invalid pixel"),
+            };
+
+            frame_buffer.append(&mut pixel_data);
+        }
+
+        frame_buffer
     }
 }

@@ -46,7 +46,7 @@ pub enum PpuMode {
 
 #[derive(Debug)]
 pub struct Ppu {
-    screen_buffer: [u8; 160 * 144],
+    pub frame_buffer: [u8; 160 * 144],
     current_line_cycle: i32,
     current_mode_cycle: i32,
     oam_buffer: Vec<u16>,
@@ -145,7 +145,7 @@ impl Ppu {
 
             let color = (palette >> (pixel * 2)) & 0x03;
 
-            self.screen_buffer[(x as usize) + (y as usize) * 160] = color;
+            self.frame_buffer[(x as usize) + (y as usize) * 160] = color;
         }
     }
 
@@ -261,13 +261,13 @@ impl Ppu {
                 let screen_x = sprite_x.wrapping_sub(8).wrapping_add(bit);
                 if screen_x < 160 {
                     if (!priority
-                        && (self.screen_buffer[(screen_x as usize) + (y as usize) * 160] != 0))
+                        && (self.frame_buffer[(screen_x as usize) + (y as usize) * 160] != 0))
                     {
                         continue;
                     }
 
                     let color = (pallete >> (pixel * 2)) & 0x3;
-                    self.screen_buffer[(screen_x as usize) + (y as usize) * 160] = color;
+                    self.frame_buffer[(screen_x as usize) + (y as usize) * 160] = color;
                 }
             }
         }
@@ -306,37 +306,12 @@ impl Ppu {
             }
         }
     }
-
-    pub fn get_video_buffer_rgba(&self) -> Vec<u8> {
-        let mut frame_buffer: Vec<u8> = Vec::new();
-
-        //TODO: Obey GB Palette
-        //TODO: Change temoporary color
-        for pixel in self.screen_buffer {
-            let mut pixel_data: Vec<u8> = match pixel {
-                3 => vec![0, 0, 0, 255],
-                2 => vec![60, 60, 60, 255],
-                1 => vec![120, 120, 120, 255],
-                0 => vec![240, 240, 240, 255],
-                _ => panic!("Invalid pixel"),
-            };
-
-            frame_buffer.append(&mut pixel_data);
-        }
-
-        frame_buffer
-    }
-
-    //HACK: Temporary remove me
-    pub fn is_vblank(&self) -> bool {
-        matches!(self.mode, PpuMode::VBLANK)
-    }
 }
 
 impl Default for Ppu {
     fn default() -> Ppu {
         Ppu {
-            screen_buffer: [0; 160 * 144],
+            frame_buffer: [0; 160 * 144],
             mode: PpuMode::OAM_SCAN,
             current_line_cycle: 0,
             current_mode_cycle: 0,
