@@ -193,7 +193,6 @@ impl Ppu {
         )
     }
 
-    //NOTE: Ignore OBJ Priority for now.
     fn draw_lcd_sprite(&mut self, memory: &mut Memory) {
         let sprite_height = if get_lcdc(memory, LCDC_OBJ_SIZE) {
             16
@@ -212,6 +211,7 @@ impl Ppu {
             let mut tile_index = memory.get_byte(oam_entry_addr + 2) as u16;
             let obj_flags = memory.get_byte(oam_entry_addr + 3);
 
+            let priority = (obj_flags >> 7) & 1 == 0;
             let flip_x = (obj_flags >> 5) & 1 == 1;
             let flip_y = (obj_flags >> 6) & 1 == 1;
 
@@ -237,7 +237,6 @@ impl Ppu {
             let hi = memory.get_byte(line_address + 1);
 
             //HACK: naive render!
-            //8x16 sprite not suported!
             for bit in 0..8 {
                 let shift = if flip_x { bit } else { 7 - bit };
                 let lo_bit = (lo >> shift) & 1;
@@ -250,6 +249,12 @@ impl Ppu {
 
                 let screen_x = sprite_x.wrapping_sub(8).wrapping_add(bit);
                 if screen_x < 160 {
+                    if (!priority
+                        && (self.screen_buffer[(screen_x as usize) + (y as usize) * 160] != 0))
+                    {
+                        continue;
+                    }
+
                     self.screen_buffer[(screen_x as usize) + (y as usize) * 160] = pixel;
                 }
             }
@@ -297,10 +302,10 @@ impl Ppu {
         //TODO: Change temoporary color
         for pixel in self.screen_buffer {
             let mut pixel_data: Vec<u8> = match pixel {
-                0 => vec![0, 0, 0, 255],
-                1 => vec![60, 60, 60, 255],
-                2 => vec![120, 120, 120, 255],
-                3 => vec![240, 240, 240, 255],
+                3 => vec![0, 0, 0, 255],
+                2 => vec![60, 60, 60, 255],
+                1 => vec![120, 120, 120, 255],
+                0 => vec![240, 240, 240, 255],
                 _ => panic!("Invalid pixel"),
             };
 
@@ -327,9 +332,3 @@ impl Default for Ppu {
         }
     }
 }
-
-//TODO:
-//Sprite's flip X, Y
-//OBJ Palette
-//
-//Pixel FIFO (?)
