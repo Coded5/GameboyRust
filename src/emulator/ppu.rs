@@ -195,18 +195,34 @@ impl Ppu {
 
     //NOTE: Ignore OBJ Priority for now.
     fn draw_lcd_sprite(&mut self, memory: &mut Memory) {
+        let sprite_height = if get_lcdc(memory, LCDC_OBJ_SIZE) {
+            16
+        } else {
+            8
+        };
         let y = memory.get_byte(LY);
 
         let scx = memory.get_byte(SCX);
         let scy = memory.get_byte(SCY);
 
         for &oam_entry_addr in self.oam_buffer.iter() {
-            let yy = memory.get_byte(oam_entry_addr);
-            let xx = memory.get_byte(oam_entry_addr + 1);
-            let tile_index = memory.get_byte(oam_entry_addr + 2) as u16;
+            let sprite_y = memory.get_byte(oam_entry_addr);
+            let sprite_x = memory.get_byte(oam_entry_addr + 1);
+
+            let mut tile_index = memory.get_byte(oam_entry_addr + 2) as u16;
             let _obj_flags = memory.get_byte(oam_entry_addr + 3);
 
-            let line_offset = scy.wrapping_add(y).wrapping_add(16).wrapping_sub(yy) as u16;
+            let pixel_y = y.wrapping_sub(sprite_y).wrapping_add(16);
+
+            tile_index &= if get_lcdc(memory, LCDC_OBJ_SIZE) {
+                0xFE
+            } else {
+                0xFF
+            };
+
+            tile_index += if pixel_y >= 8 { 1 } else { 0 };
+
+            let line_offset = (y.wrapping_add(16).wrapping_sub(sprite_y) % 8) as u16;
 
             let line_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2;
 
@@ -224,7 +240,7 @@ impl Ppu {
                     continue;
                 }
 
-                let screen_x = xx.wrapping_sub(8).wrapping_add(bit);
+                let screen_x = sprite_x.wrapping_sub(8).wrapping_add(bit);
                 if screen_x < 160 {
                     self.screen_buffer[(screen_x as usize) + (y as usize) * 160] = pixel;
                 }

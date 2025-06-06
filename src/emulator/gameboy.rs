@@ -3,7 +3,7 @@ use crate::devices::screen::Screen;
 use super::{
     cpu::Cpu,
     memory::Memory,
-    ppu::{Ppu, LCDC, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
+    ppu::{Ppu, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
 };
 
 #[derive(Debug)]
@@ -69,6 +69,7 @@ impl Gameboy {
             *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
             *(self.memory.get_mut_byte(0x8000 + (i + 32) as u16)) = tile_spr[i];
+            *(self.memory.get_mut_byte(0x8000 + (i + 48) as u16)) = tile_00[i];
         }
 
         for i in (0x9C00..=0x9FFF) {
@@ -76,8 +77,8 @@ impl Gameboy {
         }
 
         //OAM
-        let y = 16u8;
-        let x = 8u8;
+        let y = 20u8;
+        let x = 16u8;
         let tile_number = 2u8;
         let spr_flags = 0u8;
 
@@ -119,7 +120,7 @@ impl Gameboy {
 
         //LCDC
         *(self.memory.get_mut_byte(0xFF40)) =
-            0x91 | (1 << LCDC_WIN_TILEMAP) | (0 << LCDC_WIN_ENABLE);
+            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE);
 
         *(self.memory.get_mut_byte(0xFF42)) = 0x00;
         *(self.memory.get_mut_byte(0xFF43)) = 0x00;
