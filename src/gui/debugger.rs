@@ -1,12 +1,13 @@
 use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use piston::{EventSettings, Events, RenderEvent};
 use ratatui::{
-    layout::{Constraint, Layout},
+    layout::{Constraint, Layout, Rect},
     DefaultTerminal, Frame,
 };
 
-use crate::emulator::gameboy::Gameboy;
+use crate::{devices::screen::Screen, emulator::gameboy::Gameboy};
 
 use super::{
     gameboy_screen::ScreenWidget,
@@ -15,12 +16,13 @@ use super::{
         memory_widget::{MemoryWidget, MemoryWidgetState},
         registers_widget::RegistersWidget,
         stacks_widget::{StackWidget, StackWidgetState},
+        text_input_popup::InputPopup,
     },
 };
 
-#[derive(Debug)]
-pub struct EmuDebugger<'a> {
+pub struct EmuDebugger<'a, 'b> {
     gb: &'a mut Gameboy,
+    screen: &'b mut Screen,
     stacks_widget: StackWidget,
     instructions_widget: InstructionWidget,
     memory_widget: MemoryWidget,
@@ -28,8 +30,8 @@ pub struct EmuDebugger<'a> {
     exit: bool,
 }
 
-impl EmuDebugger<'_> {
-    pub fn new(gb: &mut Gameboy) -> EmuDebugger<'_> {
+impl<'a, 'b> EmuDebugger<'a, 'b> {
+    pub fn new(gb: &'a mut Gameboy, screen: &'b mut Screen) -> EmuDebugger<'a, 'b> {
         let instructions_widget = InstructionWidget::new(&gb.memory);
         let memory_widget = MemoryWidget::new();
         let stacks_widget = StackWidget::default();
@@ -43,17 +45,17 @@ impl EmuDebugger<'_> {
             instructions_widget,
             memory_widget,
             screen_widget,
+            screen,
             exit: false,
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
-            // self.gb.cpu.run(&mut self.gb.memory);
-
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
         }
+
         Ok(())
     }
 
@@ -64,6 +66,14 @@ impl EmuDebugger<'_> {
             Constraint::Fill(2),
         ])
         .areas(frame.area());
+
+        let area = frame.area();
+        let popup_area = Rect {
+            x: area.width / 4,
+            y: area.height / 4,
+            width: area.width / 2,
+            height: area.height / 2,
+        };
 
         let [screen, bottom] =
             Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(half);
@@ -82,6 +92,8 @@ impl EmuDebugger<'_> {
 
         frame.render_stateful_widget(&mut self.stacks_widget, stack, &mut stack_state);
         frame.render_widget(RegistersWidget::new(&self.gb.cpu), reg);
+
+        frame.render_widget(InputPopup::new(), popup_area);
     }
 
     fn handle_events(&mut self) -> io::Result<()> {

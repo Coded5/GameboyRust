@@ -55,10 +55,11 @@ pub enum PpuMode {
 #[derive(Debug)]
 pub struct Ppu {
     pub frame_buffer: [u8; 160 * 144],
-    current_line_cycle: i32,
-    current_mode_cycle: i32,
+    current_cycle: i32,
     oam_buffer: Vec<u16>,
     mode: PpuMode,
+
+    mode_change: bool,
 }
 
 pub fn get_lcdc(memory: &Memory, control: u8) -> bool {
@@ -115,11 +116,13 @@ impl Ppu {
         *current_scanline = (*current_scanline).wrapping_add(1);
 
         //Enter V-Blank
-        if (*current_scanline >= 144) {
-            self.mode = PpuMode::VBLANK;
-        } else if (*current_scanline > 155) {
+        if (*current_scanline > 154) {
             *current_scanline = 0;
+        } else if *current_scanline >= 144 {
+            self.mode = PpuMode::VBLANK;
+            self.mode_change = true;
         } else {
+            self.mode_change = true;
             self.mode = PpuMode::OAM_SCAN;
         }
     }
@@ -260,7 +263,7 @@ impl Ppu {
             let lo = memory.get_byte(line_address);
             let hi = memory.get_byte(line_address + 1);
 
-            let pallete = if ((obj_flags >> 4) & 1 == 0) {
+            let pallete = if (obj_flags >> 4) & 1 == 0 {
                 memory.get_byte(OBP0)
             } else {
                 memory.get_byte(OBP1)
@@ -293,15 +296,21 @@ impl Ppu {
     }
 
     pub fn update(&mut self, cycles: i32, memory: &mut Memory) {
-        self.current_line_cycle += cycles;
-        self.current_mode_cycle += cycles;
+        if !get_lcdc(memory, LCDC_PPU_ENABLE) {
+            return;
+        }
 
-        match (self.mode) {
+        self.current_cycle += cycles;
+
+        self.mode_change = false;
+
+        match self.mode {
             PpuMode::OAM_SCAN => {
-                if (self.current_mode_cycle >= 80) {
-                    self.current_mode_cycle -= 80;
+                if self.current_cycle >= 80 {
+                    self.current_cycle -= 80;
                     self.oam_scan(memory);
                     self.mode = PpuMode::DRAW;
+                    self.mode_change = true;
                 }
             }
             PpuMode::DRAW => {
@@ -309,17 +318,18 @@ impl Ppu {
                 self.draw_lcd(memory);
                 self.draw_lcd_sprite(memory);
                 self.mode = PpuMode::HBLANK;
+                self.mode_change = true;
             }
             PpuMode::HBLANK => {
-                if (self.current_line_cycle >= 456) {
-                    self.current_line_cycle -= 456;
+                if self.current_cycle >= 456 {
+                    self.current_cycle -= 456;
                     self.next_scanline(memory);
                 }
             }
             PpuMode::VBLANK => {
                 //Do nothing until next scanline (wait 456-T cycles)
-                if (self.current_line_cycle >= 456) {
-                    self.current_line_cycle -= 456;
+                if self.current_cycle >= 456 {
+                    self.current_cycle -= 456;
                     self.next_scanline(memory);
                 }
             }
@@ -337,10 +347,15 @@ impl Ppu {
             }
         }
 
+        if !self.mode_change {
+            return;
+        }
+
         let mut set_ppu_mode: u8 = 0;
         match self.mode {
             PpuMode::VBLANK => {
                 set_ppu_mode = 1;
+                memory.dump_memory_to_file("mem_dump2.bin");
                 request_interrupt(INT_VBLANK, memory);
             }
             PpuMode::HBLANK => {
@@ -370,9 +385,10 @@ impl Default for Ppu {
         Ppu {
             frame_buffer: [0; 160 * 144],
             mode: PpuMode::OAM_SCAN,
-            current_line_cycle: 0,
-            current_mode_cycle: 0,
+            current_cycle: 0,
             oam_buffer: Vec::new(),
+
+            mode_change: false,
         }
     }
 }

@@ -1,3 +1,10 @@
+use log::info;
+
+use crate::{
+    emulator::ppu::LY,
+    gui::disassembler::{self, disassemble_rom},
+};
+
 use super::{
     instructions::{
         opcode::Opcode,
@@ -73,11 +80,11 @@ impl Cpu {
         (hi << 8) | lo
     }
 
-    pub fn disassemble_opcode(opcode: Opcode, data: Vec<u8>) -> String {
+    pub fn disassemble_opcode(opcode: &Opcode, data: Vec<u8>) -> String {
         let mut line = String::new();
         line.push_str(&opcode.mnemonic);
 
-        if (data.len() != opcode.length - 1) {
+        if data.len() != opcode.length - 1 {
             panic!(
                 "Invalid opcode (Unequal length) [{}, {}]",
                 opcode.length,
@@ -88,20 +95,20 @@ impl Cpu {
         let mut byte: u8 = 0;
         let mut short: u16 = 0;
 
-        if (!data.is_empty()) {
+        if !data.is_empty() {
             byte = data[0];
         }
 
-        if (data.len() == 2) {
+        if data.len() == 2 {
             short = ((data[1] as u16) << 8) | (data[0] as u16);
         }
 
-        if let Some(op1) = opcode.operand1 {
+        if let Some(op1) = &opcode.operand1 {
             line.push(' ');
             line.push_str(op1.get_str_format(byte, short).as_str());
         }
 
-        if let Some(op2) = opcode.operand2 {
+        if let Some(op2) = &opcode.operand2 {
             line.push_str(", ");
             line.push_str(op2.get_str_format(byte, short).as_str());
         }
@@ -110,7 +117,7 @@ impl Cpu {
     }
 
     pub fn run(&mut self, memory: &mut Memory) -> i32 {
-        if (self.i_enable_flag) {
+        if self.i_enable_flag {
             self.ime = true;
             self.i_enable_flag = false;
         }
@@ -121,7 +128,7 @@ impl Cpu {
         // println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
 
         //Decode
-        let opcode = if (opcode_byte == 0xCB) {
+        let opcode = if opcode_byte == 0xCB {
             // let cb_opcode_byte = memory.get_byte(self.pc);
             let cb_opcode_byte = self.next_byte(memory);
 
@@ -131,10 +138,21 @@ impl Cpu {
                 .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
+        let mut data: Vec<u8> = Vec::new();
+
+        for i in 1..opcode.length {
+            data.push(memory.get_byte(self.pc + i as u16));
+        }
+
+        print!("{:X} {} ", self.pc - 1, memory.get_byte(LY));
+        println!("{}", Cpu::disassemble_opcode(&opcode, data));
+
         //Execute
         let time = execute_opcode(self, memory, opcode);
         self.f &= 0xF0;
         // self.pc = self.pc.wrapping_add(1);
+
+        // info!(target: "CPU", "PC: {:04X} A: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} ", self.pc, self.a, self.b, self.c, self.d, self.e, self.h, self.l);
 
         time
     }
@@ -164,12 +182,12 @@ impl Cpu {
     }
 
     pub fn perform_interrupt(&mut self, memory: &mut Memory) {
-        if (!self.ime) {
+        if !self.ime {
             return;
         }
 
         //Check if any interrupts are requested
-        if (self.get_if(memory) & self.get_ie(memory) == 0) {
+        if self.get_if(memory) & self.get_ie(memory) == 0 {
             return;
         }
 
@@ -187,15 +205,15 @@ impl Cpu {
         *memory.get_mut_byte(self.sp) = lo_byte;
 
         //Get interrupt address
-        let address: u16 = if (self.is_interrupt_requested(INT_VBLANK, memory)) {
+        let address: u16 = if self.is_interrupt_requested(INT_VBLANK, memory) {
             0x40
-        } else if (self.is_interrupt_requested(INT_LCD, memory)) {
+        } else if self.is_interrupt_requested(INT_LCD, memory) {
             0x48
-        } else if (self.is_interrupt_requested(INT_TIMER, memory)) {
+        } else if self.is_interrupt_requested(INT_TIMER, memory) {
             0x50
-        } else if (self.is_interrupt_requested(INT_SERIAL, memory)) {
+        } else if self.is_interrupt_requested(INT_SERIAL, memory) {
             0x58
-        } else if (self.is_interrupt_requested(INT_JOYPAD, memory)) {
+        } else if self.is_interrupt_requested(INT_JOYPAD, memory) {
             0x60
         } else {
             panic!("Unknown requested interrupt!")

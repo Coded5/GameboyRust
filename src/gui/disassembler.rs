@@ -1,4 +1,8 @@
-use crate::emulator::{cpu::Cpu, instructions::opcode_table::{get_opcode, get_prefixed_opcode}, memory::Memory};
+use crate::emulator::{
+    cpu::Cpu,
+    instructions::opcode_table::{get_opcode, get_prefixed_opcode},
+    memory::Memory,
+};
 
 pub fn disassemble_rom(memory: &Memory) -> Vec<(u16, String)> {
     let mut disassembled_rom: Vec<(u16, String)> = Vec::new();
@@ -14,7 +18,7 @@ pub fn disassemble_rom(memory: &Memory) -> Vec<(u16, String)> {
 
             let opcode = get_prefixed_opcode(cb_opcode_byte);
 
-            let inst = Cpu::disassemble_opcode(opcode, vec![]);            
+            let inst = Cpu::disassemble_opcode(&opcode, vec![]);
             disassembled_rom.push((initial_address, inst));
             current_address += 1;
             continue;
@@ -30,12 +34,12 @@ pub fn disassemble_rom(memory: &Memory) -> Vec<(u16, String)> {
 
         let mut opcode_data = vec![0u8; opcode.length - 1];
 
-        (0..opcode.length-1).for_each(|i| {
+        (0..opcode.length - 1).for_each(|i| {
             current_address += 1;
             opcode_data[i] = memory.get_byte(current_address);
         });
 
-        let inst = Cpu::disassemble_opcode(opcode, opcode_data);
+        let inst = Cpu::disassemble_opcode(&opcode, opcode_data);
         disassembled_rom.push((initial_address, inst));
         current_address += 1;
     }

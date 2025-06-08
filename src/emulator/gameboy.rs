@@ -30,7 +30,8 @@ impl Gameboy {
         let cycle = self.cpu.run(&mut self.memory);
         //TODO:
         // self.timer.update(cycle, &mut self.memory);
-        self.ppu.update(100, &mut self.memory);
+
+        self.ppu.update(cycle, &mut self.memory);
         self.cpu.perform_interrupt(&mut self.memory);
     }
 
