@@ -46,6 +46,9 @@ pub struct Cpu {
     pub pc: u16,
     pub ime: bool,
 
+    pub halt: bool,
+    pub halt_bug: bool,
+
     pub i_enable_flag: bool,
 }
 
@@ -62,6 +65,9 @@ impl Cpu {
             l: 0u8,
             sp: 0u16,
             pc: 0u16,
+
+            halt: false,
+            halt_bug: false,
 
             ime: false,
             i_enable_flag: false,
@@ -116,7 +122,27 @@ impl Cpu {
         line
     }
 
-    pub fn run(&mut self, memory: &mut Memory) -> i32 {
+    pub fn step(&mut self, memory: &mut Memory) -> i32 {
+        let ie = memory.get_byte(ADDRESS_IE);
+        let if_ = memory.get_byte(ADDRESS_IF);
+
+        if self.halt {
+            if ie & if_ != 0 {
+                self.halt = false;
+            } else {
+                return 4;
+            }
+        }
+
+        if self.halt_bug {
+            self.halt_bug = false;
+            self.run(memory, false)
+        } else {
+            self.run(memory, true)
+        }
+    }
+
+    pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
         if self.i_enable_flag {
             self.ime = true;
             self.i_enable_flag = false;
@@ -138,21 +164,26 @@ impl Cpu {
                 .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
-        let mut data: Vec<u8> = Vec::new();
-
-        for i in 1..opcode.length {
-            data.push(memory.get_byte(self.pc + i as u16));
-        }
-
-        print!("{:X} {} ", self.pc - 1, memory.get_byte(LY));
-        println!("{}", Cpu::disassemble_opcode(&opcode, data));
+        // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
+        // let mut tpc = self.pc;
+        //
+        // (0..opcode.length - 1).for_each(|i| {
+        //     data[i] = memory.get_byte(tpc + i as u16);
+        // });
+        //
+        // print!("{:X} {} ", self.pc - 1, memory.get_byte(LY));
+        // println!("{}", Cpu::disassemble_opcode(&opcode, data));
 
         //Execute
-        let time = execute_opcode(self, memory, opcode);
+        let time = execute_opcode(self, memory, opcode.clone());
         self.f &= 0xF0;
         // self.pc = self.pc.wrapping_add(1);
 
         // info!(target: "CPU", "PC: {:04X} A: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} ", self.pc, self.a, self.b, self.c, self.d, self.e, self.h, self.l);
+
+        if !increment_pc {
+            self.pc -= opcode.length as u16;
+        }
 
         time
     }
@@ -271,6 +302,19 @@ impl Cpu {
     pub fn set_hl(&mut self, val: u16) {
         self.h = ((val >> 8) & 0xff) as u8;
         self.l = (val & 0xff) as u8;
+    }
+
+    pub fn halt(&mut self, memory: &Memory) {
+        let ie = memory.get_byte(ADDRESS_IE);
+        let if_ = memory.get_byte(ADDRESS_IF);
+
+        if self.ime {
+            self.halt = true;
+        } else if ie & if_ != 0 {
+            self.halt_bug = true;
+        } else {
+            self.halt = true;
+        }
     }
 }
 

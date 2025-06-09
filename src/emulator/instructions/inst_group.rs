@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum InstGroup {
     LD8,
     LD16,
@@ -5,5 +6,5 @@ pub enum InstGroup {
     ALU16,
     RSB8,
     BRANCH,
-    MISC
+    MISC,
 }

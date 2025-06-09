@@ -59,6 +59,10 @@ macro_rules! generate_tests {
                     let initial_state = case.initial_state;
                     let final_state = case.final_state;
 
+                    cpu.halt = false;
+                    cpu.halt_bug = false;
+                    cpu.i_enable_flag = false;
+
                     cpu.sp = initial_state.sp;
                     cpu.pc = initial_state.pc;
                     cpu.a = initial_state.a;
@@ -76,7 +80,7 @@ macro_rules! generate_tests {
                         *memory.get_mut_byte(address) = value;
                     }
 
-                    cpu.run(&mut memory);
+                    cpu.step(&mut memory);
 
                     assert_eq!(cpu.pc, final_state.pc, "testing {} on PC", test_name);
                     assert_eq!(cpu.sp, final_state.sp, "testing {} on SP", test_name);

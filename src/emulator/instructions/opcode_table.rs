@@ -89,7 +89,7 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
                 "DI" => interrupts::di(cpu),
                 "NOP" => (),
                 // "STOP" => unimplemented!(),
-                // "HALT" => unimplemented!(),
+                "HALT" => cpu.halt(memory),
                 "EI" => interrupts::ei(cpu),
                 _ => panic!("Invalid Instruction {}", opcode.mnemonic),
             }

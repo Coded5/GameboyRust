@@ -37,7 +37,7 @@ impl<'a, 'b> EmuDebugger<'a, 'b> {
         let stacks_widget = StackWidget::default();
         let screen_widget = ScreenWidget::default();
 
-        gb.cpu.run(&mut gb.memory);
+        gb.cpu.run(&mut gb.memory, true);
 
         EmuDebugger {
             gb,
@@ -116,17 +116,17 @@ impl<'a, 'b> EmuDebugger<'a, 'b> {
         match key_event.code {
             KeyCode::Char('q') | KeyCode::Esc => self.exit = true,
             KeyCode::Char('n') => {
-                self.gb.cpu.run(&mut self.gb.memory);
+                self.gb.cpu.run(&mut self.gb.memory, true);
                 self.instructions_widget.state.select_next();
             }
             KeyCode::Char('m') => {
                 for _ in 0..400 {
-                    self.gb.cpu.run(&mut self.gb.memory);
+                    self.gb.cpu.run(&mut self.gb.memory, true);
                 }
             }
             KeyCode::Char('g') => {
                 while (!self.gb.cpu.z()) {
-                    self.gb.cpu.run(&mut self.gb.memory);
+                    self.gb.cpu.run(&mut self.gb.memory, true);
                 }
             }
             _ => (),

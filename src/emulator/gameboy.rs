@@ -1,7 +1,7 @@
 use crate::devices::screen::Screen;
 
 use super::{
-    cpu::Cpu,
+    cpu::{Cpu, ADDRESS_IE},
     memory::Memory,
     ppu::{Ppu, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
 };
@@ -27,7 +27,7 @@ impl Gameboy {
     }
 
     pub fn tick(&mut self) {
-        let cycle = self.cpu.run(&mut self.memory);
+        let cycle = self.cpu.step(&mut self.memory);
         //TODO:
         // self.timer.update(cycle, &mut self.memory);
 
@@ -113,28 +113,20 @@ impl Gameboy {
         *(self.memory.get_mut_byte(0xFF26)) = 0xF1;
 
         //LCDC
-        *(self.memory.get_mut_byte(0xFF40)) =
-            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE);
-
-        *(self.memory.get_mut_byte(0xFF47)) = !0xE4;
-        *(self.memory.get_mut_byte(0xFF48)) = !0xE4;
-        *(self.memory.get_mut_byte(0xFF49)) = !0xE4;
+        *(self.memory.get_mut_byte(0xFF40)) = 0x91;
 
         *(self.memory.get_mut_byte(0xFF42)) = 0x00;
         *(self.memory.get_mut_byte(0xFF43)) = 0x00;
         *(self.memory.get_mut_byte(0xFF45)) = 0x00;
-        // *(self.memory.get_mut_byte(0xFF47)) = 0xFC;
-        // *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
-        // *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
 
-        //WY, WX Defaulted at 0x00
-        *(self.memory.get_mut_byte(0xFF4A)) = 20;
-        *(self.memory.get_mut_byte(0xFF4B)) = 20;
+        *(self.memory.get_mut_byte(0xFF47)) = 0xFC;
+        *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
+        *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
+
+        *(self.memory.get_mut_byte(0xFF4A)) = 0;
+        *(self.memory.get_mut_byte(0xFF4B)) = 0;
 
         *(self.memory.get_mut_byte(0xFFFF)) = 0x00;
-
-        // *self.memory.get_mut_byte(SCX) = 6;
-        // *self.memory.get_mut_byte(SCY) = 6;
     }
 }
 
