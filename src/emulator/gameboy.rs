@@ -11,7 +11,9 @@ pub struct Gameboy {
     pub cpu: Cpu,
     pub memory: Memory,
     pub ppu: Ppu,
+
     pub accum_cycle: u128,
+    interrupted: bool,
 }
 
 impl Gameboy {
@@ -21,6 +23,7 @@ impl Gameboy {
             memory: Memory::new(),
             ppu: Ppu::default(),
             accum_cycle: 0u128,
+            interrupted: false,
         }
     }
 
@@ -29,13 +32,20 @@ impl Gameboy {
     }
 
     pub fn tick(&mut self) {
-        let cycle = self.cpu.step(&mut self.memory);
+        let mut cycle = self.cpu.step(&mut self.memory);
+
+        //TODO: Fix this bad code
+        cycle += if self.interrupted {
+            self.interrupted = false;
+            20
+        } else {
+            0
+        };
         //TODO:
         // self.timer.update(cycle, &mut self.memory);
 
         self.ppu.update(cycle, &mut self.memory);
-        self.cpu.perform_interrupt(&mut self.memory);
-
+        self.interrupted = self.cpu.perform_interrupt(&mut self.memory);
         self.accum_cycle += cycle as u128;
     }
 

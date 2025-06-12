@@ -1,3 +1,5 @@
+use crate::emulator::cpu::ADDRESS_IE;
+
 use super::{
     cpu::{request_interrupt, INT_LCD, INT_VBLANK},
     memory::Memory,
@@ -133,7 +135,6 @@ impl Ppu {
             set_stat(memory, 2);
 
             if test_stat(memory, STAT_LYC_INT) {
-                // println!("LYC == LY REQUESTED; ly={} lyc={}", ly, lyc);
                 request_interrupt(INT_LCD, memory);
             }
         }

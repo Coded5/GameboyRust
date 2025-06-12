@@ -196,11 +196,11 @@ impl Cpu {
     }
 
     pub fn is_interrupt_enabled(&self, interrupt: u8, memory: &Memory) -> bool {
-        memory.get_byte(ADDRESS_IE) >> interrupt & 0x1 == 1
+        (memory.get_byte(ADDRESS_IE) >> interrupt) & 0x1 == 1
     }
 
     pub fn is_interrupt_requested(&self, interrupt: u8, memory: &Memory) -> bool {
-        memory.get_byte(ADDRESS_IF) >> interrupt & 0x1 == 1
+        ((memory.get_byte(ADDRESS_IF) & memory.get_byte(ADDRESS_IE)) >> interrupt) & 0x1 == 1
     }
 
     pub fn set_ie(&self, value: u8, memory: &mut Memory) {
@@ -219,14 +219,14 @@ impl Cpu {
         memory.get_byte(ADDRESS_IF)
     }
 
-    pub fn perform_interrupt(&mut self, memory: &mut Memory) {
+    pub fn perform_interrupt(&mut self, memory: &mut Memory) -> bool {
         if !self.ime {
-            return;
+            return false;
         }
 
         //Check if any interrupts are requested
         if self.get_if(memory) & self.get_ie(memory) == 0 {
-            return;
+            return false;
         }
 
         //Interrupt are disabled
@@ -243,21 +243,24 @@ impl Cpu {
         *memory.get_mut_byte(self.sp) = lo_byte;
 
         //Get interrupt address
-        let address: u16 = if self.is_interrupt_requested(INT_VBLANK, memory) {
-            0x40
+        let (address, clear_bit): (u16, u8) = if self.is_interrupt_requested(INT_VBLANK, memory) {
+            (0x40, INT_VBLANK)
         } else if self.is_interrupt_requested(INT_LCD, memory) {
-            0x48
+            (0x48, INT_LCD)
         } else if self.is_interrupt_requested(INT_TIMER, memory) {
-            0x50
+            (0x50, INT_TIMER)
         } else if self.is_interrupt_requested(INT_SERIAL, memory) {
-            0x58
+            (0x58, INT_SERIAL)
         } else if self.is_interrupt_requested(INT_JOYPAD, memory) {
-            0x60
+            (0x60, INT_JOYPAD)
         } else {
             panic!("Unknown requested interrupt!")
         };
 
+        *memory.get_mut_byte(ADDRESS_IF) &= !(1 << clear_bit);
+
         self.pc = address;
+        true
     }
 
     pub fn z(&self) -> bool {
