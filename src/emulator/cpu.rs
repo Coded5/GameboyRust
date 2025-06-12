@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use log::info;
 
 use crate::{
@@ -166,13 +168,18 @@ impl Cpu {
 
         // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
         // let mut tpc = self.pc;
-        //
         // (0..opcode.length - 1).for_each(|i| {
         //     data[i] = memory.get_byte(tpc + i as u16);
         // });
-        //
         // print!("{:X} {} ", self.pc - 1, memory.get_byte(LY));
-        // println!("{}", Cpu::disassemble_opcode(&opcode, data));
+        // print!("{: <20}|", Cpu::disassemble_opcode(&opcode, data));
+        // println!(
+        //     "AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
+        //     self.af(),
+        //     self.bc(),
+        //     self.de(),
+        //     self.hl()
+        // );
 
         //Execute
         let time = execute_opcode(self, memory, opcode.clone());

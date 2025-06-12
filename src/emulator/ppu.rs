@@ -115,7 +115,6 @@ impl Ppu {
         let mut current_scanline: &mut u8 = memory.get_mut_byte(LY);
         *current_scanline = (*current_scanline).wrapping_add(1);
 
-        //Enter V-Blank
         if (*current_scanline > 154) {
             *current_scanline = 0;
         } else if *current_scanline >= 144 {
@@ -124,6 +123,19 @@ impl Ppu {
         } else {
             self.mode_change = true;
             self.mode = PpuMode::OAM_SCAN;
+        }
+
+        let ly = *current_scanline;
+        let lyc = memory.get_byte(LYC);
+
+        if lyc == ly {
+            //SET LYC == LY
+            set_stat(memory, 2);
+
+            if test_stat(memory, STAT_LYC_INT) {
+                // println!("LYC == LY REQUESTED; ly={} lyc={}", ly, lyc);
+                request_interrupt(INT_LCD, memory);
+            }
         }
     }
 
@@ -141,7 +153,7 @@ impl Ppu {
         let palette = memory.get_byte(BGP);
 
         for x in 0..160 {
-            let is_window = get_lcdc(memory, LCDC_WIN_ENABLE) && (x >= wx - 7) && (y >= wy);
+            let is_window = get_lcdc(memory, LCDC_WIN_ENABLE) && (x + 7 >= wx) && (y >= wy);
 
             let (tile_index, line_offset, shift) = if is_window {
                 self.fetch_window_tile(x, y, wx, wy, memory)
@@ -216,15 +228,15 @@ impl Ppu {
         (
             memory.get_byte(bg_tilemap_addr + tile_y * 32 + tile_x) as u16,
             line_offset,
-            (scx + x) % 8,
+            scx.wrapping_add(x) % 8,
         )
     }
 
     fn draw_lcd_sprite(&mut self, memory: &mut Memory) {
         let sprite_height = if get_lcdc(memory, LCDC_OBJ_SIZE) {
-            16
+            16u8
         } else {
-            8
+            8u8
         };
         let y = memory.get_byte(LY);
 
@@ -245,7 +257,7 @@ impl Ppu {
             let mut pixel_y = y.wrapping_sub(sprite_y).wrapping_add(16);
 
             if (flip_y) {
-                pixel_y = sprite_height - 1 - pixel_y;
+                pixel_y = sprite_height.wrapping_sub(1u8).wrapping_sub(pixel_y);
             }
 
             tile_index &= if get_lcdc(memory, LCDC_OBJ_SIZE) {
@@ -306,6 +318,8 @@ impl Ppu {
 
         match self.mode {
             PpuMode::OAM_SCAN => {
+                memory.lock_oam = true;
+
                 if self.current_cycle >= 80 {
                     self.current_cycle -= 80;
                     self.oam_scan(memory);
@@ -314,36 +328,41 @@ impl Ppu {
                 }
             }
             PpuMode::DRAW => {
+                memory.lock_vram = true;
+                //
+                // let mut penalties = 0u8;
+                //
+                // penalties += memory.get_byte(SCX) % 8;
+                // penalties += if get_lcdc(memory, LCDC_WIN_ENABLE) { 6 } else { 0 };
+
                 //TODO: Pixel FIFO
-                self.draw_lcd(memory);
-                self.draw_lcd_sprite(memory);
-                self.mode = PpuMode::HBLANK;
-                self.mode_change = true;
+
+                if self.current_cycle >= 172 {
+                    self.current_cycle -= 172;
+                    self.draw_lcd(memory);
+                    self.draw_lcd_sprite(memory);
+                    self.mode = PpuMode::HBLANK;
+                    self.mode_change = true;
+                }
             }
             PpuMode::HBLANK => {
+                memory.lock_vram = false;
+                memory.lock_oam = false;
+
                 if self.current_cycle >= 456 {
                     self.current_cycle -= 456;
                     self.next_scanline(memory);
                 }
             }
             PpuMode::VBLANK => {
+                memory.lock_vram = false;
+                memory.lock_oam = false;
+                // memory.dump_vram_to_file("vram_dump.bin");
                 //Do nothing until next scanline (wait 456-T cycles)
                 if self.current_cycle >= 456 {
                     self.current_cycle -= 456;
                     self.next_scanline(memory);
                 }
-            }
-        }
-
-        let lyc = memory.get_byte(LYC);
-        let ly = memory.get_byte(LY);
-
-        if lyc == ly {
-            //SET LYC == LY
-            set_stat(memory, 2);
-
-            if test_stat(memory, STAT_LYC_INT) {
-                request_interrupt(INT_LCD, memory);
             }
         }
 
@@ -355,7 +374,6 @@ impl Ppu {
         match self.mode {
             PpuMode::VBLANK => {
                 set_ppu_mode = 1;
-                memory.dump_memory_to_file("mem_dump2.bin");
                 request_interrupt(INT_VBLANK, memory);
             }
             PpuMode::HBLANK => {

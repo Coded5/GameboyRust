@@ -11,6 +11,7 @@ pub struct Gameboy {
     pub cpu: Cpu,
     pub memory: Memory,
     pub ppu: Ppu,
+    pub accum_cycle: u128,
 }
 
 impl Gameboy {
@@ -19,6 +20,7 @@ impl Gameboy {
             cpu: Cpu::new(),
             memory: Memory::new(),
             ppu: Ppu::default(),
+            accum_cycle: 0u128,
         }
     }
 
@@ -33,6 +35,8 @@ impl Gameboy {
 
         self.ppu.update(cycle, &mut self.memory);
         self.cpu.perform_interrupt(&mut self.memory);
+
+        self.accum_cycle += cycle as u128;
     }
 
     //HACK: Remove this
@@ -80,6 +84,19 @@ impl Gameboy {
         *(self.memory.get_mut_byte(0xFE00 + 1)) = x;
         *(self.memory.get_mut_byte(0xFE00 + 2)) = tile_number;
         *(self.memory.get_mut_byte(0xFE00 + 3)) = spr_flags;
+
+        *(self.memory.get_mut_byte(0xFF40)) =
+            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE);
+
+        *(self.memory.get_mut_byte(0xFF42)) = 6;
+        *(self.memory.get_mut_byte(0xFF43)) = 6;
+
+        *(self.memory.get_mut_byte(WX)) = 20;
+        *(self.memory.get_mut_byte(WY)) = 20;
+
+        *(self.memory.get_mut_byte(0xFF47)) = 0xE4;
+        *(self.memory.get_mut_byte(0xFF48)) = 0xE4;
+        *(self.memory.get_mut_byte(0xFF49)) = 0xE4;
     }
 
     pub fn set_gb_initial_state(&mut self) {
@@ -88,6 +105,7 @@ impl Gameboy {
         self.cpu.set_de(0x00D8);
         self.cpu.set_hl(0x014D);
 
+        self.cpu.pc = 0x100;
         self.cpu.sp = 0xFFFE;
 
         *(self.memory.get_mut_byte(0xFF05)) = 0x00;
