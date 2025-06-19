@@ -1,9 +1,12 @@
-use crate::devices::screen::Screen;
+use log::info;
+
+use crate::{devices::screen::Screen, emulator::ppu::LY};
 
 use super::{
     cpu::{Cpu, ADDRESS_IE},
     memory::Memory,
     ppu::{Ppu, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
+    timer::Timer,
 };
 
 #[derive(Debug)]
@@ -11,8 +14,10 @@ pub struct Gameboy {
     pub cpu: Cpu,
     pub memory: Memory,
     pub ppu: Ppu,
+    pub timer: Timer,
 
     pub accum_cycle: u128,
+    fc: i32,
     interrupted: bool,
 }
 
@@ -22,8 +27,11 @@ impl Gameboy {
             cpu: Cpu::new(),
             memory: Memory::new(),
             ppu: Ppu::default(),
+            timer: Timer::default(),
+
             accum_cycle: 0u128,
             interrupted: false,
+            fc: 0,
         }
     }
 
@@ -41,12 +49,37 @@ impl Gameboy {
         } else {
             0
         };
-        //TODO:
-        // self.timer.update(cycle, &mut self.memory);
 
+        self.timer.update(cycle, &mut self.memory);
         self.ppu.update(cycle, &mut self.memory);
         self.interrupted = self.cpu.perform_interrupt(&mut self.memory);
         self.accum_cycle += cycle as u128;
+
+        let pc = self.cpu.pc;
+
+        let a = self.cpu.a;
+        let b = self.cpu.b;
+        let c = self.cpu.c;
+        let d = self.cpu.d;
+        let e = self.cpu.e;
+        let f = self.format_flags();
+        let hl = self.cpu.hl();
+        let sp = self.cpu.sp;
+
+        let v = self.memory.get_byte(LY);
+        let h = self.ppu.current_cycle;
+
+        // info!(target: "GBState", "{pc:04X} A:{a:02X} B:{b:02X} C:{c:02X} D:{d:02X} E:{e:02X} F:{f} HL:{hl:04X} S:{sp:04X} V:{v}");
+    }
+
+    // TODO: Remove this
+    pub fn format_flags(&self) -> String {
+        let z = if self.cpu.z() { "Z" } else { "z" };
+        let n = if self.cpu.n() { "N" } else { "n" };
+        let h = if self.cpu.h() { "H" } else { "h" };
+        let c = if self.cpu.c() { "C" } else { "c" };
+
+        format!("{}{}{}{}", z, n, h, c)
     }
 
     //HACK: Remove this
