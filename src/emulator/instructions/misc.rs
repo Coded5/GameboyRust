@@ -1,9 +1,11 @@
-use crate::emulator::{cpu::{Cpu, Z, N, H, C}, memory::Memory};
+use crate::emulator::{
+    cpu::{Cpu, C, H, N, Z},
+    memory::Memory,
+};
 
 use super::operand::Operands;
 
 pub fn swap(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-
     let src = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -12,7 +14,7 @@ pub fn swap(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -25,23 +27,20 @@ pub fn swap(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, false);
 
-    let dest: &mut u8 = match operand {
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+    match operand {
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
-
-
-    *dest = res;
 }
 
-pub fn cpl(cpu: &mut Cpu) { 
+pub fn cpl(cpu: &mut Cpu) {
     cpu.a = !cpu.a;
 }
 

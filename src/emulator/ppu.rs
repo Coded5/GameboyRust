@@ -1,3 +1,5 @@
+use log::info;
+
 use crate::emulator::cpu::ADDRESS_IE;
 
 use super::{
@@ -57,27 +59,33 @@ pub enum PpuMode {
 #[derive(Debug)]
 pub struct Ppu {
     pub frame_buffer: [u8; 160 * 144],
-    current_cycle: i32,
+    pub current_cycle: i32,
     oam_buffer: Vec<u16>,
     mode: PpuMode,
 
     mode_change: bool,
+    pub finish_frame: bool,
 }
 
 pub fn get_lcdc(memory: &Memory, control: u8) -> bool {
-    (memory.get_byte(LCDC) >> control) & 1 == 1
+    (memory.read_byte(LCDC) >> control) & 1 == 1
 }
 
 pub fn reset_stat(memory: &mut Memory, stat: u8) {
-    *memory.get_mut_byte(STAT) &= !(1 << stat);
+    memory.write_byte(STAT, memory.read_byte(STAT) & !(1 << stat));
 }
 
 pub fn set_stat(memory: &mut Memory, stat: u8) {
-    *memory.get_mut_byte(STAT) |= (1 << stat);
+    memory.write_byte(STAT, memory.read_byte(STAT) | (1 << stat));
 }
 
 pub fn test_stat(memory: &Memory, stat: u8) -> bool {
-    (memory.get_byte(STAT) >> stat) & 1 == 1
+    let mask = (1 << STAT_LYC_INT)
+        | (1 << STAT_MODE0_INT)
+        | (1 << STAT_MODE1_INT)
+        | (1 << STAT_MODE2_INT)
+        | 7;
+    ((memory.read_byte(STAT) & mask) >> stat) & 1 == 1
 }
 
 impl Ppu {
@@ -85,16 +93,16 @@ impl Ppu {
         //OAM $FE00 - $FE9F
 
         let memory_iter = (OAM_START_ADDR..OAM_END_ADDR).step_by(4);
-        let is_tall_sprite = (memory.get_byte(LCDC) >> 2) & 0x1 == 1;
-        let ly = memory.get_byte(LY);
+        let is_tall_sprite = (memory.read_byte(LCDC) >> 2) & 0x1 == 1;
+        let ly = memory.read_byte(LY);
 
         self.oam_buffer = Vec::new();
 
         for addr in memory_iter {
-            let y_pos = memory.get_byte(addr);
-            let x_pos = memory.get_byte(addr + 1);
-            let tile_index = memory.get_byte(addr + 2);
-            let attributes = memory.get_byte(addr + 3);
+            let y_pos = memory.read_byte(addr);
+            let x_pos = memory.read_byte(addr + 1);
+            let tile_index = memory.read_byte(addr + 2);
+            let attributes = memory.read_byte(addr + 3);
 
             // Sprite X-Position must be greater than 0
             //LY + 16 must be greater than or equal to Sprite Y-Position
@@ -114,44 +122,69 @@ impl Ppu {
     }
 
     fn next_scanline(&mut self, memory: &mut Memory) {
-        let mut current_scanline: &mut u8 = memory.get_mut_byte(LY);
-        *current_scanline = (*current_scanline).wrapping_add(1);
+        // let mut current_scanline: &mut u8 = memory.get_mut_byte(LY);
+        // *current_scanline = (*current_scanline).wrapping_add(1);
 
-        if (*current_scanline > 154) {
-            *current_scanline = 0;
-        } else if *current_scanline >= 144 {
+        let mut current_scanline = memory.read_byte(LY);
+        current_scanline = current_scanline.wrapping_add(1);
+
+        memory.write_byte(LY, current_scanline);
+
+        if (current_scanline > 154) {
+            current_scanline = 0;
+            self.finish_frame = true;
+            // info!("Next frame");
+        } else if current_scanline >= 144 {
             self.mode = PpuMode::VBLANK;
-            self.mode_change = true;
+
+            request_interrupt(INT_VBLANK, memory);
         } else {
             self.mode_change = true;
             self.mode = PpuMode::OAM_SCAN;
+
+            if test_stat(memory, STAT_MODE2_INT) {
+                request_interrupt(INT_LCD, memory);
+            }
         }
 
-        let ly = *current_scanline;
-        let lyc = memory.get_byte(LYC);
+        let lyc = memory.read_byte(LYC);
 
-        if lyc == ly {
+        if lyc == current_scanline {
             //SET LYC == LY
             set_stat(memory, 2);
 
             if test_stat(memory, STAT_LYC_INT) {
+                // info!(
+                //     "Calling LY == LYC Interrupt during {:?} in LY({})",
+                //     self.mode, ly
+                // );
                 request_interrupt(INT_LCD, memory);
             }
+        } else {
+            reset_stat(memory, 2);
         }
+
+        let scx = memory.read_byte(SCX);
+        let scy = memory.read_byte(SCY);
+        let wx = memory.read_byte(WX);
+        let wy = memory.read_byte(WY);
+        let ly = memory.read_byte(LY);
+
+        // info!("SCX={} SCY={} WX={} WY={} LY={}", scx, scy, wx, wy, ly);
     }
 
     fn draw_lcd(&mut self, memory: &mut Memory) {
-        let y = memory.get_byte(LY);
+        let y = memory.read_byte(LY);
 
-        let scx = memory.get_byte(SCX);
-        let scy = memory.get_byte(SCY);
+        let scx = memory.read_byte(SCX);
+        let scy = memory.read_byte(SCY);
 
-        let wx = memory.get_byte(WX);
-        let wy = memory.get_byte(WY);
+        let wx = memory.read_byte(WX);
+        let wy = memory.read_byte(WY);
 
         let is_8000 = get_lcdc(memory, LCDC_BG_WIN_TILE);
 
-        let palette = memory.get_byte(BGP);
+        let palette = memory.read_byte(BGP);
 
         for x in 0..160 {
             let is_window = get_lcdc(memory, LCDC_WIN_ENABLE) && (x + 7 >= wx) && (y >= wy);
@@ -169,8 +202,8 @@ impl Ppu {
                 0x9000u16.wrapping_add_signed(index * 16)
             };
 
-            let lo = memory.get_byte(tile_address);
-            let hi = memory.get_byte(tile_address + 1);
+            let lo = memory.read_byte(tile_address);
+            let hi = memory.read_byte(tile_address + 1);
 
             //HACK: naive render
             let lo_bit = (lo >> shift) & 1;
@@ -201,7 +234,7 @@ impl Ppu {
         let tile_x = ((relative_x / 8) & 0x1F) as u16;
         let tile_y = (relative_y / 8) as u16;
         (
-            memory.get_byte(window_tilemap_addr + tile_x + tile_y * 32) as u16,
+            memory.read_byte(window_tilemap_addr + tile_x + tile_y * 32) as u16,
             line_offset,
             shift,
         )
@@ -227,9 +260,9 @@ impl Ppu {
         };
 
         (
-            memory.get_byte(bg_tilemap_addr + tile_y * 32 + tile_x) as u16,
+            memory.read_byte(bg_tilemap_addr + tile_y * 32 + tile_x) as u16,
             line_offset,
-            scx.wrapping_add(x) % 8,
+            7 - (scx.wrapping_add(x) % 8),
         )
     }
 
@@ -239,17 +272,17 @@ impl Ppu {
         } else {
             8u8
         };
-        let y = memory.get_byte(LY);
+        let y = memory.read_byte(LY);
 
-        let scx = memory.get_byte(SCX);
-        let scy = memory.get_byte(SCY);
+        let scx = memory.read_byte(SCX);
+        let scy = memory.read_byte(SCY);
 
         for &oam_entry_addr in self.oam_buffer.iter() {
-            let sprite_y = memory.get_byte(oam_entry_addr);
-            let sprite_x = memory.get_byte(oam_entry_addr + 1);
+            let sprite_y = memory.read_byte(oam_entry_addr);
+            let sprite_x = memory.read_byte(oam_entry_addr + 1);
 
-            let mut tile_index = memory.get_byte(oam_entry_addr + 2) as u16;
-            let obj_flags = memory.get_byte(oam_entry_addr + 3);
+            let mut tile_index = memory.read_byte(oam_entry_addr + 2) as u16;
+            let obj_flags = memory.read_byte(oam_entry_addr + 3);
 
             let priority = (obj_flags >> 7) & 1 == 0;
             let flip_x = (obj_flags >> 5) & 1 == 1;
@@ -273,13 +306,13 @@ impl Ppu {
 
             let line_address = TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2;
 
-            let lo = memory.get_byte(line_address);
-            let hi = memory.get_byte(line_address + 1);
+            let lo = memory.read_byte(line_address);
+            let hi = memory.read_byte(line_address + 1);
 
             let pallete = if (obj_flags >> 4) & 1 == 0 {
-                memory.get_byte(OBP0)
+                memory.read_byte(OBP0)
             } else {
-                memory.get_byte(OBP1)
+                memory.read_byte(OBP1)
             };
 
             //HACK: naive render!
@@ -330,10 +363,10 @@ impl Ppu {
             }
             PpuMode::DRAW => {
                 memory.lock_vram = true;
-                //
+
                 // let mut penalties = 0u8;
                 //
-                // penalties += memory.get_byte(SCX) % 8;
+                // penalties += memory.read_byte(SCX) % 8;
                 // penalties += if get_lcdc(memory, LCDC_WIN_ENABLE) { 6 } else { 0 };
 
                 //TODO: Pixel FIFO
@@ -343,15 +376,18 @@ impl Ppu {
                     self.draw_lcd(memory);
                     self.draw_lcd_sprite(memory);
                     self.mode = PpuMode::HBLANK;
-                    self.mode_change = true;
+
+                    if test_stat(memory, STAT_MODE0_INT) {
+                        request_interrupt(INT_LCD, memory);
+                    }
                 }
             }
             PpuMode::HBLANK => {
                 memory.lock_vram = false;
                 memory.lock_oam = false;
 
-                if self.current_cycle >= 456 {
-                    self.current_cycle -= 456;
+                if self.current_cycle >= 204 {
+                    self.current_cycle -= 204;
                     self.next_scanline(memory);
                 }
             }
@@ -367,35 +403,16 @@ impl Ppu {
             }
         }
 
-        if !self.mode_change {
-            return;
-        }
-
         let mut set_ppu_mode: u8 = 0;
-        match self.mode {
-            PpuMode::VBLANK => {
-                set_ppu_mode = 1;
-                request_interrupt(INT_VBLANK, memory);
-            }
-            PpuMode::HBLANK => {
-                set_ppu_mode = 0;
-                if test_stat(memory, STAT_MODE0_INT) {
-                    request_interrupt(INT_LCD, memory);
-                }
-            }
-            PpuMode::OAM_SCAN => {
-                set_ppu_mode = 2;
-                if test_stat(memory, STAT_MODE2_INT) {
-                    request_interrupt(INT_LCD, memory);
-                }
-            }
-            PpuMode::DRAW => {
-                set_ppu_mode = 3;
-            }
-        }
+        let ppu_mode = match self.mode {
+            PpuMode::VBLANK => 1,
+            PpuMode::HBLANK => 0,
+            PpuMode::OAM_SCAN => 2,
+            PpuMode::DRAW => 3,
+        };
 
-        *memory.get_mut_byte(STAT) &= !3;
-        *memory.get_mut_byte(STAT) |= set_ppu_mode;
+        memory.write_byte(STAT, memory.read_byte(STAT) & !3);
+        memory.write_byte(STAT, memory.read_byte(STAT) | set_ppu_mode);
     }
 }
 
@@ -408,6 +425,7 @@ impl Default for Ppu {
             oam_buffer: Vec::new(),
 
             mode_change: false,
+            finish_frame: false,
         }
     }
 }

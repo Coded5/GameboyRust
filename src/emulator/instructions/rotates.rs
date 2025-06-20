@@ -61,7 +61,7 @@ pub fn rra(cpu: &mut Cpu) {
 
 pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -80,24 +80,22 @@ pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, msb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -116,24 +114,22 @@ pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -153,24 +149,22 @@ pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -190,24 +184,22 @@ pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, msb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -226,24 +218,22 @@ pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, msb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -265,24 +255,22 @@ pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -301,17 +289,15 @@ pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(H, false);
     cpu.set(C, lsb == 1);
 
-    let dest: &mut u8 = match operand {
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
+    match operand {
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
         _ => panic!(),
     };
-
-    *dest = res;
 }

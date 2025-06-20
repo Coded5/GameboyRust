@@ -1,15 +1,17 @@
+use std::io;
+
 use log::info;
 
 use crate::{devices::screen::Screen, emulator::ppu::LY};
 
 use super::{
+    cartridge::load_cartridge,
     cpu::{Cpu, ADDRESS_IE},
     memory::Memory,
     ppu::{Ppu, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
     timer::Timer,
 };
 
-#[derive(Debug)]
 pub struct Gameboy {
     pub cpu: Cpu,
     pub memory: Memory,
@@ -22,17 +24,17 @@ pub struct Gameboy {
 }
 
 impl Gameboy {
-    pub fn new() -> Self {
-        Gameboy {
+    pub fn new(path: &str) -> io::Result<Self> {
+        Ok(Gameboy {
             cpu: Cpu::new(),
-            memory: Memory::new(),
+            memory: Memory::new(load_cartridge(path)?),
             ppu: Ppu::default(),
             timer: Timer::default(),
 
             accum_cycle: 0u128,
             interrupted: false,
             fc: 0,
-        }
+        })
     }
 
     pub fn get_frame_buffer(&self) -> &[u8; 160 * 144] {
@@ -66,7 +68,7 @@ impl Gameboy {
         let hl = self.cpu.hl();
         let sp = self.cpu.sp;
 
-        let v = self.memory.get_byte(LY);
+        let v = self.memory.read_byte(LY);
         let h = self.ppu.current_cycle;
 
         // info!(target: "GBState", "{pc:04X} A:{a:02X} B:{b:02X} C:{c:02X} D:{d:02X} E:{e:02X} F:{f} HL:{hl:04X} S:{sp:04X} V:{v}");
@@ -104,14 +106,15 @@ impl Gameboy {
         ];
 
         for i in 0..16 {
-            *(self.memory.get_mut_byte(0x8000 + i as u16)) = tile_00[i];
-            *(self.memory.get_mut_byte(0x8000 + (i + 16) as u16)) = tile_1[i];
-            *(self.memory.get_mut_byte(0x8000 + (i + 32) as u16)) = tile_spr[i];
-            *(self.memory.get_mut_byte(0x8000 + (i + 48) as u16)) = tile_00[i];
+            self.memory.write_byte(0x8000 + i as u16, tile_00[i]);
+            self.memory.write_byte(0x8000 + (i + 16) as u16, tile_1[i]);
+            self.memory
+                .write_byte(0x8000 + (i + 32) as u16, tile_spr[i]);
+            self.memory.write_byte(0x8000 + (i + 48) as u16, tile_00[i]);
         }
 
         for i in (0x9C00..=0x9FFF) {
-            *(self.memory.get_mut_byte(i)) = 1u8;
+            self.memory.write_byte(i, 1u8);
         }
 
         let flip_x = 5u8;
@@ -123,23 +126,25 @@ impl Gameboy {
         let tile_number = 2u8;
         let spr_flags = (1 << flip_x) | (1 << flip_y);
 
-        *(self.memory.get_mut_byte(0xFE00)) = y;
-        *(self.memory.get_mut_byte(0xFE00 + 1)) = x;
-        *(self.memory.get_mut_byte(0xFE00 + 2)) = tile_number;
-        *(self.memory.get_mut_byte(0xFE00 + 3)) = spr_flags;
+        self.memory.write_byte(0xFE00, y);
+        self.memory.write_byte(0xFE00 + 1, x);
+        self.memory.write_byte(0xFE00 + 2, tile_number);
+        self.memory.write_byte(0xFE00 + 3, spr_flags);
 
-        *(self.memory.get_mut_byte(0xFF40)) =
-            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE);
+        self.memory.write_byte(
+            0xFF40,
+            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE),
+        );
 
-        *(self.memory.get_mut_byte(0xFF42)) = 6;
-        *(self.memory.get_mut_byte(0xFF43)) = 6;
+        self.memory.write_byte(0xFF42, 6);
+        self.memory.write_byte(0xFF43, 6);
 
-        *(self.memory.get_mut_byte(WX)) = 20;
-        *(self.memory.get_mut_byte(WY)) = 20;
+        self.memory.write_byte(WX, 20);
+        self.memory.write_byte(WY, 20);
 
-        *(self.memory.get_mut_byte(0xFF47)) = 0xE4;
-        *(self.memory.get_mut_byte(0xFF48)) = 0xE4;
-        *(self.memory.get_mut_byte(0xFF49)) = 0xE4;
+        self.memory.write_byte(0xFF47, 0xE4);
+        self.memory.write_byte(0xFF48, 0xE4);
+        self.memory.write_byte(0xFF49, 0xE4);
     }
 
     pub fn set_gb_initial_state(&mut self) {
@@ -151,48 +156,37 @@ impl Gameboy {
         self.cpu.pc = 0x100;
         self.cpu.sp = 0xFFFE;
 
-        *(self.memory.get_mut_byte(0xFF05)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF06)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF07)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF10)) = 0x80;
-        *(self.memory.get_mut_byte(0xFF11)) = 0xBF;
-        *(self.memory.get_mut_byte(0xFF12)) = 0xF3;
-        *(self.memory.get_mut_byte(0xFF14)) = 0xBF;
-        *(self.memory.get_mut_byte(0xFF16)) = 0x3F;
-        *(self.memory.get_mut_byte(0xFF17)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF19)) = 0xBF;
-        *(self.memory.get_mut_byte(0xFF1A)) = 0x7F;
-        *(self.memory.get_mut_byte(0xFF1B)) = 0xFF;
-        *(self.memory.get_mut_byte(0xFF1C)) = 0x9F;
-        *(self.memory.get_mut_byte(0xFF1E)) = 0xBF;
-        *(self.memory.get_mut_byte(0xFF20)) = 0xFF;
-        *(self.memory.get_mut_byte(0xFF21)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF22)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF23)) = 0xBF;
-        *(self.memory.get_mut_byte(0xFF24)) = 0x77;
-        *(self.memory.get_mut_byte(0xFF25)) = 0xF3;
-        *(self.memory.get_mut_byte(0xFF26)) = 0xF1;
+        self.memory.write_byte(0xFF05, 0x00);
+        self.memory.write_byte(0xFF06, 0x00);
+        self.memory.write_byte(0xFF07, 0x00);
+        self.memory.write_byte(0xFF10, 0x80);
+        self.memory.write_byte(0xFF11, 0xBF);
+        self.memory.write_byte(0xFF12, 0xF3);
+        self.memory.write_byte(0xFF14, 0xBF);
+        self.memory.write_byte(0xFF16, 0x3F);
+        self.memory.write_byte(0xFF17, 0x00);
+        self.memory.write_byte(0xFF19, 0xBF);
+        self.memory.write_byte(0xFF1A, 0x7F);
+        self.memory.write_byte(0xFF1B, 0xFF);
+        self.memory.write_byte(0xFF1C, 0x9F);
+        self.memory.write_byte(0xFF1E, 0xBF);
+        self.memory.write_byte(0xFF20, 0xFF);
+        self.memory.write_byte(0xFF21, 0x00);
+        self.memory.write_byte(0xFF22, 0x00);
+        self.memory.write_byte(0xFF23, 0xBF);
+        self.memory.write_byte(0xFF24, 0x77);
+        self.memory.write_byte(0xFF26, 0xF1);
+        self.memory.write_byte(0xFF25, 0xF3);
 
-        //LCDC
-        *(self.memory.get_mut_byte(0xFF40)) = 0x91;
-
-        *(self.memory.get_mut_byte(0xFF42)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF43)) = 0x00;
-        *(self.memory.get_mut_byte(0xFF45)) = 0x00;
-
-        *(self.memory.get_mut_byte(0xFF47)) = 0xFC;
-        *(self.memory.get_mut_byte(0xFF48)) = 0xFF;
-        *(self.memory.get_mut_byte(0xFF49)) = 0xFF;
-
-        *(self.memory.get_mut_byte(0xFF4A)) = 0;
-        *(self.memory.get_mut_byte(0xFF4B)) = 0;
-
-        *(self.memory.get_mut_byte(0xFFFF)) = 0x00;
-    }
-}
-
-impl Default for Gameboy {
-    fn default() -> Self {
-        Self::new()
+        self.memory.write_byte(0xFF40, 0x91);
+        self.memory.write_byte(0xFF42, 0x00);
+        self.memory.write_byte(0xFF43, 0x00);
+        self.memory.write_byte(0xFF45, 0x00);
+        self.memory.write_byte(0xFF47, 0xFC);
+        self.memory.write_byte(0xFF48, 0xFF);
+        self.memory.write_byte(0xFF49, 0xFF);
+        self.memory.write_byte(0xFF4A, 0);
+        self.memory.write_byte(0xFF4B, 0);
+        self.memory.write_byte(0xFFFF, 0x00);
     }
 }

@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use log::info;
+use log::{debug, info};
 
 use crate::{
     emulator::ppu::LY,
@@ -31,7 +31,7 @@ pub const INT_LCD: u8 = 1;
 pub const INT_VBLANK: u8 = 0;
 
 pub fn request_interrupt(interrupt: u8, memory: &mut Memory) {
-    *memory.get_mut_byte(ADDRESS_IF) |= (1 << interrupt);
+    memory.write_byte(ADDRESS_IF, memory.read_byte(ADDRESS_IF) | (1 << interrupt));
 }
 
 #[derive(Debug)]
@@ -78,7 +78,7 @@ impl Cpu {
 
     pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
         self.pc = self.pc.wrapping_add(1);
-        memory.get_byte(self.pc.wrapping_sub(1))
+        memory.read_byte(self.pc.wrapping_sub(1))
     }
 
     pub fn next_short(&mut self, memory: &mut Memory) -> u16 {
@@ -125,8 +125,8 @@ impl Cpu {
     }
 
     pub fn step(&mut self, memory: &mut Memory) -> i32 {
-        let ie = memory.get_byte(ADDRESS_IE);
-        let if_ = memory.get_byte(ADDRESS_IF);
+        let ie = memory.read_byte(ADDRESS_IE);
+        let if_ = memory.read_byte(ADDRESS_IF);
 
         if self.halt {
             if ie & if_ != 0 {
@@ -145,19 +145,21 @@ impl Cpu {
     }
 
     pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
+        debug!(target: "Doctor", "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}", self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l, self.sp, self.pc, memory.read_byte(self.pc), memory.read_byte(self.pc + 1), memory.read_byte(self.pc + 2), memory.read_byte(self.pc + 3));
+
         if self.i_enable_flag {
             self.ime = true;
             self.i_enable_flag = false;
         }
 
         //Fetch
-        // let opcode_byte = memory.get_byte(self.pc);
+        // let opcode_byte = memory.read_byte(self.pc);
         let opcode_byte = self.next_byte(memory);
         // println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
 
         //Decode
         let opcode = if opcode_byte == 0xCB {
-            // let cb_opcode_byte = memory.get_byte(self.pc);
+            // let cb_opcode_byte = memory.read_byte(self.pc);
             let cb_opcode_byte = self.next_byte(memory);
 
             get_prefixed_opcode(cb_opcode_byte)
@@ -169,12 +171,12 @@ impl Cpu {
         // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
         // let mut tpc = self.pc;
         // (0..opcode.length - 1).for_each(|i| {
-        //     data[i] = memory.get_byte(tpc + i as u16);
+        //     data[i] = memory.read_byte(tpc + i as u16);
         // });
-        // print!("{:X} {} ", self.pc - 1, memory.get_byte(LY));
-        // print!("{: <20}|", Cpu::disassemble_opcode(&opcode, data));
-        // println!(
-        //     "AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
+        // info!(
+        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
+        //     self.pc - 1,
+        //     Cpu::disassemble_opcode(&opcode, data),
         //     self.af(),
         //     self.bc(),
         //     self.de(),
@@ -196,27 +198,27 @@ impl Cpu {
     }
 
     pub fn is_interrupt_enabled(&self, interrupt: u8, memory: &Memory) -> bool {
-        (memory.get_byte(ADDRESS_IE) >> interrupt) & 0x1 == 1
+        (memory.read_byte(ADDRESS_IE) >> interrupt) & 0x1 == 1
     }
 
     pub fn is_interrupt_requested(&self, interrupt: u8, memory: &Memory) -> bool {
-        ((memory.get_byte(ADDRESS_IF) & memory.get_byte(ADDRESS_IE)) >> interrupt) & 0x1 == 1
+        ((memory.read_byte(ADDRESS_IF) & memory.read_byte(ADDRESS_IE)) >> interrupt) & 0x1 == 1
     }
 
     pub fn set_ie(&self, value: u8, memory: &mut Memory) {
-        *memory.get_mut_byte(ADDRESS_IE) = value;
+        memory.write_byte(ADDRESS_IE, value);
     }
 
     pub fn set_if(&self, value: u8, memory: &mut Memory) {
-        *memory.get_mut_byte(ADDRESS_IF) = value;
+        memory.write_byte(ADDRESS_IF, value);
     }
 
     pub fn get_ie(&self, memory: &Memory) -> u8 {
-        memory.get_byte(ADDRESS_IE)
+        memory.read_byte(ADDRESS_IE)
     }
 
     pub fn get_if(&self, memory: &Memory) -> u8 {
-        memory.get_byte(ADDRESS_IF)
+        memory.read_byte(ADDRESS_IF)
     }
 
     pub fn perform_interrupt(&mut self, memory: &mut Memory) -> bool {
@@ -238,9 +240,9 @@ impl Cpu {
         let lo_byte = (self.pc & 0xFF) as u8;
 
         self.sp -= 1;
-        *memory.get_mut_byte(self.sp) = hi_byte;
+        memory.write_byte(self.sp, hi_byte);
         self.sp -= 1;
-        *memory.get_mut_byte(self.sp) = lo_byte;
+        memory.write_byte(self.sp, lo_byte);
 
         //Get interrupt address
         let (address, clear_bit): (u16, u8) = if self.is_interrupt_requested(INT_VBLANK, memory) {
@@ -257,7 +259,7 @@ impl Cpu {
             panic!("Unknown requested interrupt!")
         };
 
-        *memory.get_mut_byte(ADDRESS_IF) &= !(1 << clear_bit);
+        memory.write_byte(ADDRESS_IF, memory.read_byte(ADDRESS_IF) & !(1 << clear_bit));
 
         self.pc = address;
         true
@@ -314,9 +316,21 @@ impl Cpu {
         self.l = (val & 0xff) as u8;
     }
 
+    pub fn stop(&mut self, memory: &mut Memory) {
+        let joypad = false;
+        let interrupted = (memory.read_byte(ADDRESS_IE) & memory.read_byte(ADDRESS_IF)) != 0;
+
+        if joypad {
+            if !interrupted {
+                self.pc = self.pc.wrapping_add(1);
+                self.halt = true;
+            }
+        }
+    }
+
     pub fn halt(&mut self, memory: &Memory) {
-        let ie = memory.get_byte(ADDRESS_IE);
-        let if_ = memory.get_byte(ADDRESS_IF);
+        let ie = memory.read_byte(ADDRESS_IE);
+        let if_ = memory.read_byte(ADDRESS_IF);
 
         if self.ime {
             self.halt = true;

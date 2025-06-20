@@ -19,7 +19,7 @@ impl Timer {
         self.accum_cycle += cycle;
 
         if self.accum_cycle >= 256 {
-            *memory.get_mut_byte(DIV) = memory.get_byte(DIV).wrapping_add(1);
+            memory.write_byte(DIV, memory.read_byte(DIV).wrapping_add(1));
             self.accum_cycle -= 256;
         }
 
@@ -27,8 +27,8 @@ impl Timer {
     }
 
     pub fn update_timer(&mut self, cycle: i32, memory: &mut Memory) {
-        let tac_enable = (memory.get_byte(TAC) >> 2) & 1 == 1;
-        let increment_time = match (memory.get_byte(TAC) & 3) {
+        let tac_enable = (memory.read_byte(TAC) >> 2) & 1 == 1;
+        let increment_time = match (memory.read_byte(TAC) & 3) {
             0 => 256 * 4,
             1 => 4 * 4,
             2 => 16 * 4,
@@ -43,12 +43,12 @@ impl Timer {
         self.timer_accum_cycle += cycle;
 
         if self.timer_accum_cycle >= increment_time {
-            let (res, overflow) = memory.get_byte(TIMA).overflowing_add(1);
+            let (res, overflow) = memory.read_byte(TIMA).overflowing_add(1);
 
-            *memory.get_mut_byte(TIMA) = res;
+            memory.write_byte(TIMA, res);
 
             if overflow {
-                *memory.get_mut_byte(TIMA) = memory.get_byte(TMA);
+                memory.write_byte(TIMA, memory.read_byte(TMA));
                 request_interrupt(INT_TIMER, memory);
             }
 
@@ -57,6 +57,6 @@ impl Timer {
     }
 
     pub fn reset_div(&mut self, memory: &mut Memory) {
-        *memory.get_mut_byte(DIV) = 0;
+        memory.write_byte(DIV, 0);
     }
 }

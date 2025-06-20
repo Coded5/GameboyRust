@@ -84,16 +84,14 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
                 };
             }
         }
-        MISC => {
-            match opcode.mnemonic.as_str() {
-                "DI" => interrupts::di(cpu),
-                "NOP" => (),
-                // "STOP" => unimplemented!(),
-                "HALT" => cpu.halt(memory),
-                "EI" => interrupts::ei(cpu),
-                _ => panic!("Invalid Instruction {}", opcode.mnemonic),
-            }
-        }
+        MISC => match opcode.mnemonic.as_str() {
+            "DI" => interrupts::di(cpu),
+            "NOP" => (),
+            "STOP" => (),
+            "HALT" => cpu.halt(memory),
+            "EI" => interrupts::ei(cpu),
+            _ => panic!("Invalid Instruction {}", opcode.mnemonic),
+        },
     }
 
     opcode.cycle[0]

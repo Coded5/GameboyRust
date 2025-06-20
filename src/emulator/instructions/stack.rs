@@ -15,15 +15,15 @@ pub fn push(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let hi: u8 = ((src >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = hi;
+    memory.write_byte(cpu.sp, hi);
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = lo;
+    memory.write_byte(cpu.sp, lo);
 }
 
 pub fn pop(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    let lo = memory.get_byte(cpu.sp) as u16;
+    let lo = memory.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
-    let hi = memory.get_byte(cpu.sp) as u16;
+    let hi = memory.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
 
     let res = (hi << 8) | lo;
@@ -43,9 +43,9 @@ pub fn call(cpu: &mut Cpu, memory: &mut Memory) {
     let hi_byte: u8 = ((address >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = hi_byte;
+    memory.write_byte(cpu.sp, hi_byte);
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = lo_byte;
+    memory.write_byte(cpu.sp, lo_byte);
 
     let new_address = cpu.next_short(memory);
     cpu.pc = new_address;
@@ -72,9 +72,9 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     let hi_byte: u8 = ((address >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = hi_byte;
+    memory.write_byte(cpu.sp, hi_byte);
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = lo_byte;
+    memory.write_byte(cpu.sp, lo_byte);
 
     cpu.pc = new_address;
 
@@ -82,9 +82,9 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
 }
 
 pub fn ret(cpu: &mut Cpu, memory: &mut Memory) {
-    let lo = memory.get_byte(cpu.sp) as u16;
+    let lo = memory.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
-    let hi = memory.get_byte(cpu.sp) as u16;
+    let hi = memory.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
 
     cpu.pc = (hi << 8) | lo;
@@ -128,9 +128,9 @@ pub fn rst(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     };
 
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = ((cpu.pc >> 8) & 0xFF) as u8;
+    memory.write_byte(cpu.sp, ((cpu.pc >> 8) & 0xFF) as u8);
     cpu.sp -= 1;
-    *memory.get_mut_byte(cpu.sp) = (cpu.pc & 0xFF) as u8;
+    memory.write_byte(cpu.sp, (cpu.pc & 0xFF) as u8);
 
     cpu.pc = address;
     false

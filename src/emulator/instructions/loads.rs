@@ -15,63 +15,61 @@ pub fn load8(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrBC => memory.get_byte(cpu.bc()),
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
-        Operands::AddrDE => memory.get_byte(cpu.de()),
+        Operands::AddrBC => memory.read_byte(cpu.bc()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrDE => memory.read_byte(cpu.de()),
         Operands::AddrHLI => {
             cpu.set_hl(cpu.hl() + 1);
-            memory.get_byte(cpu.hl() - 1)
+            memory.read_byte(cpu.hl() - 1)
         }
         Operands::AddrHLD => {
             cpu.set_hl(cpu.hl() - 1);
-            memory.get_byte(cpu.hl() + 1)
+            memory.read_byte(cpu.hl() + 1)
         }
-        Operands::AddrFF00_C => memory.get_byte(0xFF00 + (cpu.c as u16)),
+        Operands::AddrFF00_C => memory.read_byte(0xFF00 + (cpu.c as u16)),
         Operands::AddrFF00_U8 => {
             let addr: u16 = 0xFF00 + cpu.next_byte(memory) as u16;
-            memory.get_byte(addr)
+            memory.read_byte(addr)
         }
         Operands::AddrU16 => {
             let addr: u16 = cpu.next_short(memory);
-            memory.get_byte(addr)
+            memory.read_byte(addr)
         }
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!("Invalid source : {:?}", operand2),
     };
 
-    let des: &mut u8 = match operand1 {
-        Operands::A => &mut cpu.a,
-        Operands::F => &mut cpu.f,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
-        Operands::AddrBC => memory.get_mut_byte(cpu.bc()),
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+    match operand1 {
+        Operands::A => cpu.a = src,
+        Operands::F => cpu.f = src,
+        Operands::B => cpu.b = src,
+        Operands::C => cpu.c = src,
+        Operands::D => cpu.d = src,
+        Operands::E => cpu.e = src,
+        Operands::H => cpu.h = src,
+        Operands::L => cpu.l = src,
+        Operands::AddrBC => memory.write_byte(cpu.bc(), src),
+        Operands::AddrHL => memory.write_byte(cpu.hl(), src),
         Operands::AddrHLI => {
-            cpu.set_hl(cpu.hl() + 1);
-            memory.get_mut_byte(cpu.hl() - 1)
+            cpu.set_hl(cpu.hl().wrapping_add(1));
+            memory.write_byte(cpu.hl() - 1, src);
         }
         Operands::AddrHLD => {
-            cpu.set_hl(cpu.hl() - 1);
-            memory.get_mut_byte(cpu.hl() + 1)
+            cpu.set_hl(cpu.hl().wrapping_sub(1));
+            memory.write_byte(cpu.hl() + 1, src);
         }
-        Operands::AddrDE => memory.get_mut_byte(cpu.de()),
-        Operands::AddrFF00_C => memory.get_mut_byte(0xFF00 + cpu.c as u16),
+        Operands::AddrDE => memory.write_byte(cpu.de(), src),
+        Operands::AddrFF00_C => memory.write_byte(0xFF00 + cpu.c as u16, src),
         Operands::AddrFF00_U8 => {
             let addr: u16 = 0xFF00 + cpu.next_byte(memory) as u16;
-            memory.get_mut_byte(addr)
+            memory.write_byte(addr, src);
         }
         Operands::AddrU16 => {
             let addr: u16 = cpu.next_short(memory);
-            memory.get_mut_byte(addr)
+            memory.write_byte(addr, src);
         }
         _ => panic!(),
     };
-
-    *des = src;
 }
 
 pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
@@ -107,10 +105,10 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
             let lo: u8 = (src & 0xFF) as u8;
             let hi: u8 = ((src >> 8) & 0xFF) as u8;
 
-            println!("sp: {}, hi: {}, lo: {}", cpu.sp, hi, lo);
+            //println!("sp: {}, hi: {}, lo: {}", cpu.sp, hi, lo);
 
-            *memory.get_mut_byte(address) = lo;
-            *memory.get_mut_byte(address + 1) = hi;
+            memory.write_byte(address, lo);
+            memory.write_byte(address + 1, hi);
         }
         _ => panic!(),
     }

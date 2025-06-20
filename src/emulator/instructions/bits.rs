@@ -1,9 +1,11 @@
-use crate::emulator::{cpu::{Cpu, Z, N, H}, memory::Memory};
+use crate::emulator::{
+    cpu::{Cpu, H, N, Z},
+    memory::Memory,
+};
 
 use super::operand::Operands;
 
 pub fn bit(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
-
     let b: u8 = match operand1 {
         Operands::I(val) => val,
         _ => panic!(),
@@ -17,7 +19,7 @@ pub fn bit(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -29,7 +31,6 @@ pub fn bit(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
 }
 
 pub fn set(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
-
     let b: u8 = match operand1 {
         Operands::I(val) => val,
         _ => panic!(),
@@ -43,29 +44,26 @@ pub fn set(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
     let res = src | (1 << b);
 
-    let dest: &mut u8 = match operand2 {
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+    match operand2 {
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
-
-    *dest = res;
 }
 
 pub fn res(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
-
     let b: u8 = match operand1 {
         Operands::I(val) => val,
         _ => panic!(),
@@ -79,23 +77,21 @@ pub fn res(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
     let res = src & !(1 << b);
 
-    let dest: &mut u8 = match operand2 {
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+    match operand2 {
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
-
-    *dest = res;
 }

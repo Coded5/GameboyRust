@@ -65,7 +65,7 @@ pub fn add(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -89,7 +89,7 @@ pub fn adc(cpu: &mut Cpu, memory: &mut Memory, _operand1: Operands, operand2: Op
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -115,7 +115,7 @@ pub fn sub(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -139,7 +139,7 @@ pub fn sbc(cpu: &mut Cpu, memory: &mut Memory, _operand0: Operands, operand: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -165,7 +165,7 @@ pub fn and(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -189,7 +189,7 @@ pub fn or(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -213,7 +213,7 @@ pub fn xor(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -237,7 +237,7 @@ pub fn cp(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         Operands::U8 => cpu.next_byte(memory),
         _ => panic!(),
     };
@@ -257,7 +257,7 @@ pub fn inc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -267,19 +267,17 @@ pub fn inc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(N, false);
     cpu.set(H, ((1 & 0xF) + (rhs & 0xF)) > 0xF);
 
-    let lhs: &mut u8 = match operand {
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+    match operand {
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
-
-    *lhs = res;
 }
 
 pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
@@ -291,7 +289,7 @@ pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.get_byte(cpu.hl()),
+        Operands::AddrHL => memory.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -301,17 +299,15 @@ pub fn dec(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(N, true);
     cpu.set(H, (rhs & 0xF) < (1 & 0xF));
 
-    let lhs: &mut u8 = match operand {
-        Operands::A => &mut cpu.a,
-        Operands::B => &mut cpu.b,
-        Operands::C => &mut cpu.c,
-        Operands::D => &mut cpu.d,
-        Operands::E => &mut cpu.e,
-        Operands::H => &mut cpu.h,
-        Operands::L => &mut cpu.l,
-        Operands::AddrHL => memory.get_mut_byte(cpu.hl()),
+    match operand {
+        Operands::A => cpu.a = res,
+        Operands::B => cpu.b = res,
+        Operands::C => cpu.c = res,
+        Operands::D => cpu.d = res,
+        Operands::E => cpu.e = res,
+        Operands::H => cpu.h = res,
+        Operands::L => cpu.l = res,
+        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
-
-    *lhs = res;
 }

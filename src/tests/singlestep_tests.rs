@@ -77,7 +77,7 @@ macro_rules! generate_tests {
                     cpu.ime = initial_state.ime != 0;
 
                     for (address, value) in initial_state.ram {
-                        *memory.get_mut_byte(address) = value;
+                        memory.write_byte(address, value);
                     }
 
                     cpu.step(&mut memory);
@@ -102,7 +102,7 @@ macro_rules! generate_tests {
 
                     for (address, value) in final_state.ram {
                         assert_eq!(
-                            memory.get_byte(address),
+                            memory.read_byte(address),
                             value,
                             "testing {} on memory address {} should be {}",
                             test_name,
