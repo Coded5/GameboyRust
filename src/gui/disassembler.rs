@@ -10,11 +10,11 @@ pub fn disassemble_rom(memory: &Memory) -> Vec<(u16, String)> {
 
     while (current_address < 0x4000) {
         let initial_address = current_address;
-        let opcode_byte = memory.get_byte(current_address);
+        let opcode_byte = memory.read_byte(current_address);
 
         if (opcode_byte == 0xCB) {
             current_address += 1;
-            let cb_opcode_byte = memory.get_byte(current_address);
+            let cb_opcode_byte = memory.read_byte(current_address);
 
             let opcode = get_prefixed_opcode(cb_opcode_byte);
 
@@ -36,7 +36,7 @@ pub fn disassemble_rom(memory: &Memory) -> Vec<(u16, String)> {
 
         (0..opcode.length - 1).for_each(|i| {
             current_address += 1;
-            opcode_data[i] = memory.get_byte(current_address);
+            opcode_data[i] = memory.read_byte(current_address);
         });
 
         let inst = Cpu::disassemble_opcode(&opcode, opcode_data);

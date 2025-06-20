@@ -16,13 +16,11 @@ use super::{
         memory_widget::{MemoryWidget, MemoryWidgetState},
         registers_widget::RegistersWidget,
         stacks_widget::{StackWidget, StackWidgetState},
-        text_input_popup::InputPopup,
     },
 };
 
-pub struct EmuDebugger<'a, 'b> {
-    gb: &'a mut Gameboy,
-    screen: &'b mut Screen,
+pub struct EmuDebugger<'a> {
+    gb: &'a Gameboy,
     stacks_widget: StackWidget,
     instructions_widget: InstructionWidget,
     memory_widget: MemoryWidget,
@@ -30,14 +28,12 @@ pub struct EmuDebugger<'a, 'b> {
     exit: bool,
 }
 
-impl<'a, 'b> EmuDebugger<'a, 'b> {
-    pub fn new(gb: &'a mut Gameboy, screen: &'b mut Screen) -> EmuDebugger<'a, 'b> {
+impl EmuDebugger<'_> {
+    pub fn new(gb: &Gameboy) -> EmuDebugger<'_> {
         let instructions_widget = InstructionWidget::new(&gb.memory);
         let memory_widget = MemoryWidget::new();
         let stacks_widget = StackWidget::default();
         let screen_widget = ScreenWidget::default();
-
-        gb.cpu.run(&mut gb.memory, true);
 
         EmuDebugger {
             gb,
@@ -45,7 +41,6 @@ impl<'a, 'b> EmuDebugger<'a, 'b> {
             instructions_widget,
             memory_widget,
             screen_widget,
-            screen,
             exit: false,
         }
     }
@@ -59,7 +54,7 @@ impl<'a, 'b> EmuDebugger<'a, 'b> {
         Ok(())
     }
 
-    fn draw(&mut self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame) {
         let [memory, inst, half] = Layout::horizontal([
             Constraint::Max(60),
             Constraint::Fill(1),
@@ -93,46 +88,46 @@ impl<'a, 'b> EmuDebugger<'a, 'b> {
         frame.render_stateful_widget(&mut self.stacks_widget, stack, &mut stack_state);
         frame.render_widget(RegistersWidget::new(&self.gb.cpu), reg);
 
-        frame.render_widget(InputPopup::new(), popup_area);
+        // frame.render_widget(InputPopup::new(), popup_area);
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event);
+                // self.handle_key_event(key_event);
             }
             _ => {}
         }
         Ok(())
     }
 
-    fn handle_key_event(&mut self, key_event: KeyEvent) {
-        if key_event.code == KeyCode::Esc {
-            self.exit = true;
-        }
-
-        self.memory_widget.handle_key_event(key_event);
-
-        match key_event.code {
-            KeyCode::Char('q') | KeyCode::Esc => self.exit = true,
-            KeyCode::Char('n') => {
-                self.gb.cpu.run(&mut self.gb.memory, true);
-                self.instructions_widget.state.select_next();
-            }
-            KeyCode::Char('m') => {
-                for _ in 0..400 {
-                    self.gb.cpu.run(&mut self.gb.memory, true);
-                }
-            }
-            KeyCode::Char('g') => {
-                while (!self.gb.cpu.z()) {
-                    self.gb.cpu.run(&mut self.gb.memory, true);
-                }
-            }
-            _ => (),
-        }
-
-        self.instructions_widget
-            .update_selected_instruction(self.gb.cpu.pc);
-    }
+    // fn handle_key_event(&mut self, key_event: KeyEvent) {
+    //     if key_event.code == KeyCode::Esc {
+    //         self.exit = true;
+    //     }
+    //
+    //     self.memory_widget.handle_key_event(key_event);
+    //
+    //     match key_event.code {
+    //         KeyCode::Char('q') | KeyCode::Esc => self.exit = true,
+    //         KeyCode::Char('n') => {
+    //             self.gb.cpu.run(&mut self.gb.memory, true);
+    //             self.instructions_widget.state.select_next();
+    //         }
+    //         KeyCode::Char('m') => {
+    //             for _ in 0..400 {
+    //                 self.gb.cpu.run(&mut self.gb.memory, true);
+    //             }
+    //         }
+    //         KeyCode::Char('g') => {
+    //             while (!self.gb.cpu.z()) {
+    //                 self.gb.cpu.run(&mut self.gb.memory, true);
+    //             }
+    //         }
+    //         _ => (),
+    //     }
+    //
+    //     self.instructions_widget
+    //         .update_selected_instruction(self.gb.cpu.pc);
+    // }
 }

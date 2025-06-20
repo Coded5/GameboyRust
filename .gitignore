@@ -2,6 +2,7 @@
 /roms
 /sm83
 
+*.log
 *.txt
 *.bin
 Cargo.lock

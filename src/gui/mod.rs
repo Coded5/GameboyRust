@@ -1,3 +1,4 @@
+pub mod cpu_state;
 #[allow(unused_parens)]
 pub mod debugger;
 pub mod disassembler;
