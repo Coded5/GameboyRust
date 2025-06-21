@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use log::{debug, info};
 
 use crate::emulator::cpu::{ADDRESS_IE, ADDRESS_IF};
@@ -117,6 +119,13 @@ impl Ppu {
                 self.oam_buffer.push(addr);
             }
         }
+
+        self.oam_buffer.sort_by(|a, b| {
+            memory
+                .read_byte(b + 1)
+                .cmp(&memory.read_byte(a + 1))
+                .then_with(|| b.cmp(a))
+        });
     }
 
     fn next_scanline(&mut self, memory: &mut Memory) {
@@ -131,11 +140,10 @@ impl Ppu {
             self.finish_frame = true;
         } else if current_scanline >= 144 {
             self.mode = PpuMode::VBLANK;
-
             self.window_line = 0;
             request_interrupt(INT_VBLANK, memory);
-        } else {
             self.mode_change = true;
+        } else {
             self.mode = PpuMode::OAM_SCAN;
 
             if test_stat(memory, STAT_MODE2_INT) {
@@ -205,7 +213,7 @@ impl Ppu {
                 TILEDATA_START_ADDR + tile_index * 16 + line_offset * 2
             } else {
                 let index = tile_index as i8 as i16;
-                0x9000u16.wrapping_add_signed(index * 16)
+                0x9000u16.wrapping_add_signed(index * 16) + line_offset * 2
             };
 
             let lo = memory.read_byte(tile_address);
@@ -217,17 +225,13 @@ impl Ppu {
 
             let pixel = (hi_bit << 1) | lo_bit;
 
-            let color = (palette >> (pixel * 2)) & 0x03;
+            let mut color = (palette >> (pixel * 2)) & 0x03;
 
             self.frame_buffer[(x as usize) + (y as usize) * 160] = color;
         }
 
         if window_visible {
             self.window_line += 1;
-            debug!(
-                "Window is rendered in LY={} with WC={}",
-                y, self.window_line
-            );
         }
     }
 
