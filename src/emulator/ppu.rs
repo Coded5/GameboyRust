@@ -60,6 +60,9 @@ pub enum PpuMode {
 pub struct Ppu {
     pub frame_buffer: [u8; 160 * 144],
     pub current_cycle: i32,
+
+    window_line: u8,
+
     oam_buffer: Vec<u16>,
     mode: PpuMode,
 
@@ -104,11 +107,6 @@ impl Ppu {
             let tile_index = memory.read_byte(addr + 2);
             let attributes = memory.read_byte(addr + 3);
 
-            // Sprite X-Position must be greater than 0
-            //LY + 16 must be greater than or equal to Sprite Y-Position
-            //LY + 16 must be less than Sprite Y-Position + Srite Height (8 in Normal Mode, 16 in Tall-Sprite-Mode)
-            //The amount of sprites already stored in the OAM Buffer must be less than 10
-
             let sprite_height = if is_tall_sprite { 16 } else { 8 };
 
             if (x_pos > 0
@@ -122,9 +120,6 @@ impl Ppu {
     }
 
     fn next_scanline(&mut self, memory: &mut Memory) {
-        // let mut current_scanline: &mut u8 = memory.get_mut_byte(LY);
-        // *current_scanline = (*current_scanline).wrapping_add(1);
-
         let mut current_scanline = memory.read_byte(LY);
         current_scanline = current_scanline.wrapping_add(1);
 
@@ -132,11 +127,12 @@ impl Ppu {
 
         if (current_scanline > 154) {
             memory.write_byte(LY, 0);
+            self.mode = PpuMode::OAM_SCAN;
             self.finish_frame = true;
-            debug!("Next Frame");
         } else if current_scanline >= 144 {
             self.mode = PpuMode::VBLANK;
 
+            self.window_line = 0;
             request_interrupt(INT_VBLANK, memory);
         } else {
             self.mode_change = true;
@@ -150,16 +146,14 @@ impl Ppu {
         let lyc = memory.read_byte(LYC);
 
         if lyc == current_scanline {
-            //SET LYC == LY
             set_stat(memory, 2);
 
             if test_stat(memory, STAT_LYC_INT) {
-                debug!(
-                    "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
-                    self.mode, current_scanline, current_scanline
-                );
+                // debug!(
+                //     "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
+                //     self.mode, current_scanline, current_scanline
+                // );
                 request_interrupt(INT_LCD, memory);
-                debug!("IE={:b}", memory.read_byte(ADDRESS_IF));
             }
         } else {
             reset_stat(memory, 2);
@@ -171,10 +165,14 @@ impl Ppu {
         let wy = memory.read_byte(WY);
         let ly = memory.read_byte(LY);
 
-        debug!("SCX={} SCY={} WX={} WY={} LY={}", scx, scy, wx, wy, ly);
+        // debug!("SCX={} SCY={} WX={} WY={} LY={}", scx, scy, wx, wy, ly);
     }
 
     fn draw_lcd(&mut self, memory: &mut Memory) {
+        if !get_lcdc(memory, LCDC_PRIORITY) {
+            return;
+        }
+
         let y = memory.read_byte(LY);
 
         let scx = memory.read_byte(SCX);
@@ -187,8 +185,15 @@ impl Ppu {
 
         let palette = memory.read_byte(BGP);
 
+        let mut window_visible = false;
+
         for x in 0..160 {
             let is_window = get_lcdc(memory, LCDC_WIN_ENABLE) && (x + 7 >= wx) && (y >= wy);
+            // let is_window = false;
+
+            if is_window && !window_visible {
+                window_visible = true;
+            }
 
             let (tile_index, line_offset, shift) = if is_window {
                 self.fetch_window_tile(x, y, wx, wy, memory)
@@ -216,6 +221,14 @@ impl Ppu {
 
             self.frame_buffer[(x as usize) + (y as usize) * 160] = color;
         }
+
+        if window_visible {
+            self.window_line += 1;
+            debug!(
+                "Window is rendered in LY={} with WC={}",
+                y, self.window_line
+            );
+        }
     }
 
     fn fetch_window_tile(&self, x: u8, y: u8, wx: u8, wy: u8, memory: &Memory) -> (u16, u16, u8) {
@@ -233,7 +246,7 @@ impl Ppu {
         let shift = 7 - (relative_x % 8);
 
         let tile_x = ((relative_x / 8) & 0x1F) as u16;
-        let tile_y = (relative_y / 8) as u16;
+        let tile_y = (self.window_line / 8) as u16;
         (
             memory.read_byte(window_tilemap_addr + tile_x + tile_y * 32) as u16,
             line_offset,
@@ -268,6 +281,10 @@ impl Ppu {
     }
 
     fn draw_lcd_sprite(&mut self, memory: &mut Memory) {
+        if !get_lcdc(memory, LCDC_OBJ_ENABLE) {
+            return;
+        }
+
         let sprite_height = if get_lcdc(memory, LCDC_OBJ_SIZE) {
             16u8
         } else {
@@ -335,7 +352,8 @@ impl Ppu {
                         continue;
                     }
 
-                    let color = (pallete >> (pixel * 2)) & 0x3;
+                    let mut color = (pallete >> (pixel * 2)) & 0x3;
+
                     self.frame_buffer[(screen_x as usize) + (y as usize) * 160] = color;
                 }
             }
@@ -369,8 +387,6 @@ impl Ppu {
                 //
                 // penalties += memory.read_byte(SCX) % 8;
                 // penalties += if get_lcdc(memory, LCDC_WIN_ENABLE) { 6 } else { 0 };
-
-                //TODO: Pixel FIFO
 
                 if self.current_cycle >= 172 {
                     self.current_cycle -= 172;
@@ -427,6 +443,7 @@ impl Default for Ppu {
 
             mode_change: false,
             finish_frame: false,
+            window_line: 0,
         }
     }
 }
