@@ -86,7 +86,7 @@ impl Memory {
     }
 
     pub fn write_byte(&mut self, address: u16, value: u8) {
-        if address < 8000 {
+        if address < 0x8000 {
             self.mbc.handle_banking(address, value);
             return;
         }

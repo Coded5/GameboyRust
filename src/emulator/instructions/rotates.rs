@@ -51,7 +51,7 @@ pub fn rra(cpu: &mut Cpu) {
 
     let res = (cpu.a >> 1) | (c << 7);
 
-    cpu.set(Z, res == 0);
+    cpu.set(Z, false);
     cpu.set(N, false);
     cpu.set(H, false);
     cpu.set(C, lsb == 1);

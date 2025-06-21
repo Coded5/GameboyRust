@@ -127,9 +127,9 @@ pub fn rst(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
         _ => panic!(),
     };
 
-    cpu.sp -= 1;
+    cpu.sp = cpu.sp.wrapping_sub(1);
     memory.write_byte(cpu.sp, ((cpu.pc >> 8) & 0xFF) as u8);
-    cpu.sp -= 1;
+    cpu.sp = cpu.sp.wrapping_sub(1);
     memory.write_byte(cpu.sp, (cpu.pc & 0xFF) as u8);
 
     cpu.pc = address;
