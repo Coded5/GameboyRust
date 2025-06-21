@@ -1,4 +1,4 @@
-use log::warn;
+use log::{debug, info, warn};
 
 use super::mbc::MBC;
 
@@ -38,6 +38,8 @@ impl MBC1 {
 
     pub fn change_ram_bank(&mut self, value: u8) {
         self.ram_bank = value & 3;
+
+        info!("Change ram bank to {:02X}", self.ram_bank);
     }
 
     pub fn change_rom_bank_hi(&mut self, value: u8) {
@@ -47,6 +49,8 @@ impl MBC1 {
         if self.rom_bank == 0 {
             self.rom_bank = 1;
         }
+
+        info!("Changing to rom bank {:02X}", self.rom_bank);
     }
 
     pub fn change_rom_bank_lo(&mut self, value: u8) {
@@ -57,6 +61,8 @@ impl MBC1 {
         if self.rom_bank == 0 {
             self.rom_bank = 1;
         }
+
+        info!("Changing to rom bank {:02X}", self.rom_bank);
     }
 
     pub fn enable_ram(&mut self, address: u16, value: u8) {
@@ -82,9 +88,11 @@ impl MBC for MBC1 {
     }
 
     fn read_byte(&self, address: u16) -> u8 {
+        // debug!(target: "Memory", "Reading MBC at {:04X}", address);
+
         if (0x4000..=0x7FFF).contains(&address) {
             let local_address = (address - 0x4000) as usize;
-            return self.rom[local_address + (self.rom_bank as u16 * 0x2000) as usize];
+            return self.rom[local_address + (self.rom_bank as usize * 0x4000)];
         } else if (0xA000..=0xBFFF).contains(&address) {
             if !self.ram_enable {
                 return 0xFF;
@@ -99,7 +107,7 @@ impl MBC for MBC1 {
 
     fn write_byte(&mut self, address: u16, value: u8) {
         if !(0xA000..=0xBFFF).contains(&address) {
-            warn!("Attempted to write to ROM");
+            warn!("Attempted to write to ROM at address {:04X}", address);
             return;
         }
 

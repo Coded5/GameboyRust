@@ -145,7 +145,7 @@ impl Cpu {
     }
 
     pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
-        debug!(target: "Doctor", "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}", self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l, self.sp, self.pc, memory.read_byte(self.pc), memory.read_byte(self.pc + 1), memory.read_byte(self.pc + 2), memory.read_byte(self.pc + 3));
+        // debug!(target: "Doctor", "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}", self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l, self.sp, self.pc, memory.read_byte(self.pc), memory.read_byte(self.pc + 1), memory.read_byte(self.pc + 2), memory.read_byte(self.pc + 3));
 
         if self.i_enable_flag {
             self.ime = true;
@@ -173,7 +173,7 @@ impl Cpu {
         // (0..opcode.length - 1).for_each(|i| {
         //     data[i] = memory.read_byte(tpc + i as u16);
         // });
-        // info!(
+        // debug!(
         //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
         //     self.pc - 1,
         //     Cpu::disassemble_opcode(&opcode, data),
