@@ -44,17 +44,9 @@ impl Gameboy {
     pub fn tick(&mut self) {
         let mut cycle = self.cpu.step(&mut self.memory);
 
-        //TODO: Fix this bad code
-        cycle += if self.interrupted {
-            self.interrupted = false;
-            20
-        } else {
-            0
-        };
-
         self.timer.update(cycle, &mut self.memory);
         self.ppu.update(cycle, &mut self.memory);
-        self.interrupted = self.cpu.perform_interrupt(&mut self.memory);
+        // self.interrupted = self.cpu.perform_interrupt(&mut self.memory);
         self.accum_cycle += cycle as u128;
 
         let pc = self.cpu.pc;

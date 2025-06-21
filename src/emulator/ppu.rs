@@ -1,6 +1,6 @@
-use log::info;
+use log::{debug, info};
 
-use crate::emulator::cpu::ADDRESS_IE;
+use crate::emulator::cpu::{ADDRESS_IE, ADDRESS_IF};
 
 use super::{
     cpu::{request_interrupt, INT_LCD, INT_VBLANK},
@@ -131,9 +131,9 @@ impl Ppu {
         memory.write_byte(LY, current_scanline);
 
         if (current_scanline > 154) {
-            current_scanline = 0;
+            memory.write_byte(LY, 0);
             self.finish_frame = true;
-            // info!("Next frame");
+            debug!("Next Frame");
         } else if current_scanline >= 144 {
             self.mode = PpuMode::VBLANK;
 
@@ -154,11 +154,12 @@ impl Ppu {
             set_stat(memory, 2);
 
             if test_stat(memory, STAT_LYC_INT) {
-                // info!(
-                //     "Calling LY == LYC Interrupt during {:?} in LY({})",
-                //     self.mode, ly
-                // );
+                debug!(
+                    "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
+                    self.mode, current_scanline, current_scanline
+                );
                 request_interrupt(INT_LCD, memory);
+                debug!("IE={:b}", memory.read_byte(ADDRESS_IF));
             }
         } else {
             reset_stat(memory, 2);
@@ -170,7 +171,7 @@ impl Ppu {
         let wy = memory.read_byte(WY);
         let ly = memory.read_byte(LY);
 
-        // info!("SCX={} SCY={} WX={} WY={} LY={}", scx, scy, wx, wy, ly);
+        debug!("SCX={} SCY={} WX={} WY={} LY={}", scx, scy, wx, wy, ly);
     }
 
     fn draw_lcd(&mut self, memory: &mut Memory) {

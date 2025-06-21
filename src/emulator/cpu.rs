@@ -125,12 +125,16 @@ impl Cpu {
     }
 
     pub fn step(&mut self, memory: &mut Memory) -> i32 {
+        let interrupted = self.perform_interrupt(memory);
+
         let ie = memory.read_byte(ADDRESS_IE);
         let if_ = memory.read_byte(ADDRESS_IF);
 
         if self.halt {
-            if ie & if_ != 0 {
+            if interrupted {
                 self.halt = false;
+                return 20;
+                // return self.run(memory, true);
             } else {
                 return 4;
             }
@@ -168,20 +172,20 @@ impl Cpu {
                 .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
-        // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
-        // let mut tpc = self.pc;
-        // (0..opcode.length - 1).for_each(|i| {
-        //     data[i] = memory.read_byte(tpc + i as u16);
-        // });
-        // debug!(
-        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
-        //     self.pc - 1,
-        //     Cpu::disassemble_opcode(&opcode, data),
-        //     self.af(),
-        //     self.bc(),
-        //     self.de(),
-        //     self.hl()
-        // );
+        let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
+        let mut tpc = self.pc;
+        (0..opcode.length - 1).for_each(|i| {
+            data[i] = memory.read_byte(tpc + i as u16);
+        });
+        debug!(
+            "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
+            self.pc - 1,
+            Cpu::disassemble_opcode(&opcode, data),
+            self.af(),
+            self.bc(),
+            self.de(),
+            self.hl()
+        );
 
         //Execute
         let time = execute_opcode(self, memory, opcode.clone());
