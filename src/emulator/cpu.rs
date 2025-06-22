@@ -124,9 +124,6 @@ impl Cpu {
     pub fn step(&mut self, memory: &mut Memory) -> i32 {
         let interrupted = self.perform_interrupt(memory);
 
-        let ie = memory.read_byte(ADDRESS_IE);
-        let if_ = memory.read_byte(ADDRESS_IF);
-
         if self.halt {
             if interrupted {
                 self.halt = false;
@@ -142,8 +139,17 @@ impl Cpu {
         cycle
     }
 
+    fn format_flag(&self) -> String {
+        let z = if self.z() { "Z" } else { "z" };
+        let n = if self.n() { "N" } else { "n" };
+        let c = if self.h() { "H" } else { "h" };
+        let h = if self.c() { "C" } else { "c" };
+
+        format!("{}{}{}{}", z, n, h, c)
+    }
+
     pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
-        // debug!(target: "Doctor", "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}", self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l, self.sp, self.pc, memory.read_byte(self.pc), memory.read_byte(self.pc + 1), memory.read_byte(self.pc + 2), memory.read_byte(self.pc + 3));
+        // info!(target: "Doctor", "{:04X} A:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} F:{} HL:{:04X} SP:{:04X}", self.pc, self.a, self.b, self.c, self.d, self.e, self.format_flag(), self.hl(), self.sp);
 
         if self.i_enable_flag {
             self.ime = true;
@@ -171,18 +177,19 @@ impl Cpu {
         };
 
         // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
-        // let mut tpc = self.pc;
+        // let tpc = self.pc;
         // (0..opcode.length - 1).for_each(|i| {
         //     data[i] = memory.read_byte(tpc + i as u16);
         // });
         // debug!(
-        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
+        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X} SP={:04X}",
         //     self.pc - 1,
         //     Cpu::disassemble_opcode(&opcode, data),
         //     self.af(),
         //     self.bc(),
         //     self.de(),
-        //     self.hl()
+        //     self.hl(),
+        //     self.sp
         // );
 
         //Execute
@@ -289,7 +296,7 @@ impl Cpu {
 
         let mask: u8 = !(1 << flag);
         self.f &= mask;
-        self.f |= (bit << flag);
+        self.f |= bit << flag;
     }
 
     pub fn af(&self) -> u16 {
