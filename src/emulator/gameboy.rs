@@ -7,6 +7,7 @@ use crate::{devices::screen::Screen, emulator::ppu::LY};
 use super::{
     cartridge::load_cartridge,
     cpu::{Cpu, ADDRESS_IE},
+    joypad::Joypad,
     memory::Memory,
     ppu::{Ppu, PpuMode, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
     timer::Timer,
@@ -17,6 +18,7 @@ pub struct Gameboy {
     pub memory: Memory,
     pub ppu: Ppu,
     pub timer: Timer,
+    pub joypad: Joypad,
 
     pub accum_cycle: u128,
     pub can_render: bool,
@@ -31,6 +33,7 @@ impl Gameboy {
             memory: Memory::new(load_cartridge(path)?),
             ppu: Ppu::default(),
             timer: Timer::default(),
+            joypad: Joypad::default(),
 
             accum_cycle: 0u128,
             can_render: false,
@@ -44,11 +47,12 @@ impl Gameboy {
     }
 
     pub fn tick(&mut self) {
-        let mut cycle = self.cpu.step(&mut self.memory);
+        self.joypad.update(&mut self.memory);
+
+        let cycle = self.cpu.step(&mut self.memory);
 
         self.timer.update(cycle, &mut self.memory);
         self.ppu.update(cycle, &mut self.memory);
-        // self.interrupted = self.cpu.perform_interrupt(&mut self.memory);
         self.accum_cycle += cycle as u128;
 
         if self.ppu.finish_frame {

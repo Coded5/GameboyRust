@@ -18,17 +18,18 @@ pub fn load_cartridge(path: &str) -> io::Result<Box<dyn MBC>> {
     let mut file = File::open(path)?;
     let length: usize = fs::metadata(path)?.len() as usize;
     let mut cartridge_memory: Vec<u8> = vec![0u8; length];
-    file.read_exact(&mut cartridge_memory);
+    file.read_exact(&mut cartridge_memory)?;
 
     info!("Load cartridge with size: {}", length);
 
     let rom_size = (32 * 1024) * (1 << cartridge_memory[0x148]);
-    let mbc: Box<dyn MBC> = match cartridge_memory[CART_HEADER_TYPE as usize] {
+    let mbc_type = cartridge_memory[CART_HEADER_TYPE as usize];
+    let mbc: Box<dyn MBC> = match mbc_type {
         0 => Box::new(Rom::new(cartridge_memory)),
         1..=3 => Box::new(MBC1::new(cartridge_memory, rom_size)),
         4..=6 => unimplemented!(),
 
-        _ => panic!("Unsupported cartridge type."),
+        _ => panic!("Unsupported cartridge type: {}", mbc_type),
     };
 
     Ok(mbc)
