@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, process::exit};
 
 use log::{debug, info};
 
@@ -134,18 +134,15 @@ impl Cpu {
             if interrupted {
                 self.halt = false;
                 return 20;
-                // return self.run(memory, true);
             } else {
                 return 4;
             }
         }
 
-        if self.halt_bug {
-            self.halt_bug = false;
-            self.run(memory, false)
-        } else {
-            self.run(memory, true)
-        }
+        let cycle = self.run(memory, !self.halt_bug);
+        self.halt_bug = false;
+
+        cycle
     }
 
     pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
@@ -161,6 +158,10 @@ impl Cpu {
         let opcode_byte = self.next_byte(memory);
         // println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
 
+        // if opcode_byte == 0x40 {
+        //     exit(0);
+        // }
+
         //Decode
         let opcode = if opcode_byte == 0xCB {
             // let cb_opcode_byte = memory.read_byte(self.pc);
@@ -172,20 +173,20 @@ impl Cpu {
                 .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
-        let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
-        let mut tpc = self.pc;
-        (0..opcode.length - 1).for_each(|i| {
-            data[i] = memory.read_byte(tpc + i as u16);
-        });
-        debug!(
-            "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
-            self.pc - 1,
-            Cpu::disassemble_opcode(&opcode, data),
-            self.af(),
-            self.bc(),
-            self.de(),
-            self.hl()
-        );
+        // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
+        // let mut tpc = self.pc;
+        // (0..opcode.length - 1).for_each(|i| {
+        //     data[i] = memory.read_byte(tpc + i as u16);
+        // });
+        // debug!(
+        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X}",
+        //     self.pc - 1,
+        //     Cpu::disassemble_opcode(&opcode, data),
+        //     self.af(),
+        //     self.bc(),
+        //     self.de(),
+        //     self.hl()
+        // );
 
         //Execute
         let time = execute_opcode(self, memory, opcode.clone());
@@ -226,12 +227,16 @@ impl Cpu {
     }
 
     pub fn perform_interrupt(&mut self, memory: &mut Memory) -> bool {
-        if !self.ime {
+        let ie = memory.read_byte(ADDRESS_IE);
+        let if_ = memory.read_byte(ADDRESS_IF);
+
+        if ie & if_ == 0 {
             return false;
+        } else {
+            self.halt = false;
         }
 
-        //Check if any interrupts are requested
-        if self.get_if(memory) & self.get_ie(memory) == 0 {
+        if !self.ime {
             return false;
         }
 
@@ -320,25 +325,12 @@ impl Cpu {
         self.l = (val & 0xff) as u8;
     }
 
-    pub fn stop(&mut self, memory: &mut Memory) {
-        let joypad = false;
-        let interrupted = (memory.read_byte(ADDRESS_IE) & memory.read_byte(ADDRESS_IF)) != 0;
-
-        if joypad {
-            if !interrupted {
-                self.pc = self.pc.wrapping_add(1);
-                self.halt = true;
-            }
-        }
-    }
-
     pub fn halt(&mut self, memory: &Memory) {
         let ie = memory.read_byte(ADDRESS_IE);
         let if_ = memory.read_byte(ADDRESS_IF);
 
-        if self.ime {
-            self.halt = true;
-        } else if ie & if_ != 0 {
+        if !self.ime && (ie & if_ != 0) {
+            self.halt = false;
             self.halt_bug = true;
         } else {
             self.halt = true;

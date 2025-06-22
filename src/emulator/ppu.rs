@@ -371,8 +371,6 @@ impl Ppu {
 
         self.current_cycle += cycles;
 
-        self.mode_change = false;
-
         match self.mode {
             PpuMode::OAM_SCAN => {
                 memory.lock_oam = true;
@@ -381,7 +379,6 @@ impl Ppu {
                     self.current_cycle -= 80;
                     self.oam_scan(memory);
                     self.mode = PpuMode::DRAW;
-                    self.mode_change = true;
                 }
             }
             PpuMode::DRAW => {

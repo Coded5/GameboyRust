@@ -119,10 +119,6 @@ impl Memory {
         self.memory[address as usize] = value;
     }
 
-    // pub fn get_byte(&self, address: u16) -> u8 {
-    //     self.memory[address as usize]
-    // }
-
     pub fn dump_memory_to_file(&self, path: &str) -> io::Result<()> {
         let mut file = File::create(path)?;
         file.write_all(&self.memory)?;
