@@ -29,11 +29,11 @@ impl Screen {
         let mut frame_buffer: Vec<u32> = Vec::new();
 
         for pixel in buffer {
-            let mut pixel = match pixel {
+            let pixel = match pixel {
                 3 => 0xFF000000,
-                2 => 0xFF3C3C3C,
-                1 => 0xFF787878,
-                0 => 0xFFF0F0F0,
+                2 => 0xFF686868,
+                1 => 0xFFB5B5B5,
+                0 => 0xFFFFFFFF,
                 _ => panic!("Invalid pixel"),
             };
 
