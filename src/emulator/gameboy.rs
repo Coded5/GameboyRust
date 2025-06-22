@@ -53,6 +53,11 @@ impl Gameboy {
 
         self.timer.update(cycle, &mut self.memory);
         self.ppu.update(cycle, &mut self.memory);
+
+        if self.memory.dma_transfer_active {
+            self.memory.update_transfer(cycle);
+        }
+
         self.accum_cycle += cycle as u128;
 
         if self.ppu.finish_frame {

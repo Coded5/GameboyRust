@@ -2,7 +2,7 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::io::{self, Write};
 
-use log::warn;
+use log::{debug, warn};
 
 use super::mbcs::mbc::MBC;
 use super::timer::DIV;
@@ -15,6 +15,9 @@ pub struct Memory {
 
     pub lock_vram: bool,
     pub lock_oam: bool,
+    pub dma_transfer_active: bool,
+    dma_transfer_cycle: i32,
+    dma_transfer: u8,
 }
 
 impl Memory {
@@ -25,10 +28,15 @@ impl Memory {
             lock_oam: false,
             locked_byte: 0u8,
 
+            dma_transfer_active: false,
+            dma_transfer_cycle: 0,
+            dma_transfer: 0,
+
             mbc,
         }
     }
 
+    //NOTE: Reserved for loading bootrom only for now
     pub fn load_rom(&mut self, path: &str) -> Result<usize, io::Error> {
         let mut file = File::open(path)?;
         let length: usize = fs::metadata(path)?.len() as usize;
@@ -46,35 +54,31 @@ impl Memory {
         Ok(length)
     }
 
-    // pub fn get_mut_byte(&mut self, address: u16) -> Option<&mut u8> {
-    //     Some(&mut self.memory[address as usize])
-    // }
+    pub fn update_transfer(&mut self, cycle: i32) {
+        self.dma_transfer_cycle += cycle;
 
-    pub fn get_mut_bytee(&mut self, address: u16) -> &mut u8 {
-        if self.lock_oam && (0xFE00..=0xFE9F).contains(&address) {
-            warn!("OAM Accessed during lock");
-            return &mut self.locked_byte;
+        if self.dma_transfer_cycle >= 160 * 4 {
+            let start_addr: u16 = (self.dma_transfer as u16) << 8;
+            let end_addr: u16 = ((self.dma_transfer as u16) << 8) | 0x9F;
+
+            for (offset, addr) in (start_addr..=end_addr).enumerate() {
+                self.memory[0xFE00 + offset] = self.memory[addr as usize];
+            }
+
+            self.dma_transfer_cycle = 0;
+            self.dma_transfer_active = false;
         }
-
-        if self.lock_vram && (0x8000..=0x9FFF).contains(&address) {
-            warn!("VRAM Accessed during lock");
-            return &mut self.locked_byte;
-        }
-
-        if address == DIV {
-            self.memory[DIV as usize] = 0u8;
-            return &mut self.locked_byte;
-        }
-
-        if address <= 0x7FFF {
-            warn!("Attempted to write to ROM");
-            return &mut self.locked_byte;
-        }
-
-        &mut self.memory[address as usize]
     }
 
     pub fn read_byte(&self, address: u16) -> u8 {
+        if address == 0xFF01 {
+            return 0xFF;
+        }
+
+        // if address < 0x100 && self.memory[0xFF50] == 0 {
+        //     return self.memory[address as usize];
+        // }
+
         match address {
             0x0000..=0x3FFF => self.mbc.read_byte(address),
             0x4000..=0x7FFF => self.mbc.read_byte(address),
@@ -91,28 +95,30 @@ impl Memory {
             return;
         }
 
+        if address == 0xFF46 {
+            self.dma_transfer_active = true;
+            self.dma_transfer = value;
+        }
+
         if (0xA000..=0xBFFF).contains(&address) {
             self.mbc.write_byte(address, value);
             return;
         }
 
-        if self.lock_oam && (0xFE00..=0xFE9F).contains(&address) {
-            warn!("OAM Accessed during lock");
+        if (0xFE00..=0xFE9F).contains(&address) {
+            debug!("Writing to OAM at {:04X}", address);
+            // warn!("OAM Accessed during lock");
             // return;
         }
 
-        if self.lock_vram && (0x8000..=0x9FFF).contains(&address) {
-            warn!("VRAM Accessed during lock");
+        if (0x8000..=0x9FFF).contains(&address) {
+            // debug!("Writing to VRAM at {:04X}", address);
+            // warn!("VRAM Accessed during lock");
             // return;
         }
 
         if address == DIV {
             self.memory[DIV as usize] = 0u8;
-            return;
-        }
-
-        if address <= 0x7FFF {
-            warn!("Attempted to write to ROM");
             return;
         }
 
@@ -122,6 +128,12 @@ impl Memory {
     pub fn dump_memory_to_file(&self, path: &str) -> io::Result<()> {
         let mut file = File::create(path)?;
         file.write_all(&self.memory)?;
+        Ok(())
+    }
+
+    pub fn dump_oam_to_file(&self, path: &str) -> io::Result<()> {
+        let mut file = File::create(path)?;
+        file.write_all(&self.memory[0xFE00..=0xFE9F])?;
         Ok(())
     }
 
