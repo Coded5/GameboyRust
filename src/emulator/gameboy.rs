@@ -8,7 +8,7 @@ use super::{
     cartridge::load_cartridge,
     cpu::{Cpu, ADDRESS_IE},
     memory::Memory,
-    ppu::{Ppu, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
+    ppu::{Ppu, PpuMode, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
     timer::Timer,
 };
 
@@ -19,6 +19,7 @@ pub struct Gameboy {
     pub timer: Timer,
 
     pub accum_cycle: u128,
+    pub can_render: bool,
     fc: i32,
     interrupted: bool,
 }
@@ -32,6 +33,7 @@ impl Gameboy {
             timer: Timer::default(),
 
             accum_cycle: 0u128,
+            can_render: false,
             interrupted: false,
             fc: 0,
         })
@@ -49,19 +51,10 @@ impl Gameboy {
         // self.interrupted = self.cpu.perform_interrupt(&mut self.memory);
         self.accum_cycle += cycle as u128;
 
-        let pc = self.cpu.pc;
-
-        let a = self.cpu.a;
-        let b = self.cpu.b;
-        let c = self.cpu.c;
-        let d = self.cpu.d;
-        let e = self.cpu.e;
-        let f = self.format_flags();
-        let hl = self.cpu.hl();
-        let sp = self.cpu.sp;
-
-        let v = self.memory.read_byte(LY);
-        let h = self.ppu.current_cycle;
+        if self.ppu.finish_frame {
+            self.can_render = true;
+            self.ppu.finish_frame = false;
+        }
 
         // info!(target: "GBState", "{pc:04X} A:{a:02X} B:{b:02X} C:{c:02X} D:{d:02X} E:{e:02X} F:{f} HL:{hl:04X} S:{sp:04X} V:{v}");
     }

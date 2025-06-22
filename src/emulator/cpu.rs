@@ -2,10 +2,7 @@ use std::{io::Write, process::exit};
 
 use log::{debug, info};
 
-use crate::{
-    emulator::ppu::LY,
-    gui::disassembler::{self, disassemble_rom},
-};
+use crate::emulator::ppu::LY;
 
 use super::{
     instructions::{

@@ -66,7 +66,7 @@ pub struct Ppu {
     window_line: u8,
 
     oam_buffer: Vec<u16>,
-    mode: PpuMode,
+    pub mode: PpuMode,
 
     mode_change: bool,
     pub finish_frame: bool,
@@ -142,7 +142,6 @@ impl Ppu {
             self.mode = PpuMode::VBLANK;
             self.window_line = 0;
             request_interrupt(INT_VBLANK, memory);
-            self.mode_change = true;
         } else {
             self.mode = PpuMode::OAM_SCAN;
 
