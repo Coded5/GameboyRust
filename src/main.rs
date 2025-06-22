@@ -39,7 +39,8 @@ fn main() {
     let mut screen = Screen::new(4);
 
     let mut gameboy: Gameboy =
-        Gameboy::new("./roms/gb-test-roms/cpu_instrs/cpu_instrs.gb").unwrap();
+        // Gameboy::new("./roms/gb-test-roms/cpu_instrs/cpu_instrs.gb").unwrap();
+        Gameboy::new("./roms/tetris.gb").unwrap();
     gameboy.set_gb_initial_state();
 
     let mut fps = 0;
@@ -51,6 +52,15 @@ fn main() {
     let mut current_time = Instant::now();
 
     while screen.window.is_open() && !screen.window.is_key_down(minifb::Key::Escape) {
+        gameboy.joypad.start = !screen.window.is_key_down(minifb::Key::A);
+        gameboy.joypad.select = !screen.window.is_key_down(minifb::Key::S);
+        gameboy.joypad.btn_a = !screen.window.is_key_down(minifb::Key::Z);
+        gameboy.joypad.btn_b = !screen.window.is_key_down(minifb::Key::X);
+        gameboy.joypad.up = !screen.window.is_key_down(minifb::Key::Up);
+        gameboy.joypad.down = !screen.window.is_key_down(minifb::Key::Down);
+        gameboy.joypad.left = !screen.window.is_key_down(minifb::Key::Left);
+        gameboy.joypad.right = !screen.window.is_key_down(minifb::Key::Right);
+
         gameboy.tick();
 
         if gameboy.accum_cycle >= cycle_cap {
