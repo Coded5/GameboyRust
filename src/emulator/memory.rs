@@ -2,8 +2,6 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::io::{self, Write};
 
-use log::{debug, warn};
-
 use super::mbcs::mbc::MBC;
 use super::timer::DIV;
 
@@ -11,7 +9,8 @@ pub struct Memory {
     mbc: Box<dyn MBC>,
 
     memory: [u8; 0x10000],
-    locked_byte: u8,
+
+    pub div_reset: bool,
 
     pub lock_vram: bool,
     pub lock_oam: bool,
@@ -26,7 +25,8 @@ impl Memory {
             memory: [0_u8; 0x10000],
             lock_vram: false,
             lock_oam: false,
-            locked_byte: 0u8,
+
+            div_reset: false,
 
             dma_transfer_active: false,
             dma_transfer_cycle: 0,
@@ -117,9 +117,15 @@ impl Memory {
 
         if address == DIV {
             self.memory[DIV as usize] = 0u8;
+            self.div_reset = true;
             return;
         }
 
+        self.memory[address as usize] = value;
+    }
+
+    //HACK: is there a better way?
+    pub fn write_byte_uncheck(&mut self, address: u16, value: u8) {
         self.memory[address as usize] = value;
     }
 
