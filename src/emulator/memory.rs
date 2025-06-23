@@ -106,12 +106,12 @@ impl Memory {
         }
 
         if (0xFE00..=0xFE9F).contains(&address) {
-            warn!("OAM Accessed during lock");
+            // warn!("OAM Accessed during lock");
             // return;
         }
 
         if (0x8000..=0x9FFF).contains(&address) {
-            warn!("VRAM Accessed during lock");
+            // warn!("VRAM Accessed during lock");
             // return;
         }
 
