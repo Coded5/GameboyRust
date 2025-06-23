@@ -2,6 +2,15 @@
 
 A gameboy emulator written in Rust that I've been learning. It is mostly feature-completed (see feature)
 
+
+|![cpu_instrs](https://raw.githubusercontent.com/Coded5/GameboyRust/refs/heads/main/screenshots/cpu_instrs.png)|![dmg-acid2](https://raw.githubusercontent.com/Coded5/GameboyRust/refs/heads/main/screenshots/dmg-acid2.png)|
+:---------------------------|:--------------------------
+|cpu_instrs.gb|dmg-acid2.gb|
+|![BGBTest](https://raw.githubusercontent.com/Coded5/GameboyRust/refs/heads/main/screenshots/bgbtest.png)|![Tetris](https://raw.githubusercontent.com/Coded5/GameboyRust/refs/heads/main/screenshots/tetris.png)|
+|bgbtest.gb|Tetris|
+
+
+
 ## Building
 ```
   cargo build --release
