@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use gameboy::{devices::screen::Screen, emulator::gameboy::Gameboy};
+use log::debug;
 use log::info;
 use log::LevelFilter;
 use num_format::{Locale, ToFormattedString};
@@ -8,49 +9,70 @@ use simplelog::CombinedLogger;
 use simplelog::Config;
 use simplelog::TermLogger;
 
+use clap::Parser;
+
+///A Gameboy Emulator
+#[derive(Parser, Debug)]
+struct Args {
+    /// Path to rom
+    #[arg(short, long)]
+    rom: String,
+
+    /// Bootrom
+    #[arg(short, long, default_value_t = String::new())]
+    bootrom: String,
+
+    /// Enable logging
+    #[arg(short, long, default_value_t = false)]
+    logging: bool,
+}
+
 fn main() {
-    CombinedLogger::init(vec![
-        // WriteLogger::new(
-        //     LevelFilter::Info,
-        //     Config::default(),
-        //     File::create("gb_log_2.log").unwrap(),
-        // ),
-        TermLogger::new(
-            LevelFilter::Debug,
-            Config::default(),
-            simplelog::TerminalMode::Stdout,
-            simplelog::ColorChoice::Auto,
-        ),
-        // TermLogger::new(
-        //     LevelFilter::Info,
-        //     Config::default(),
-        //     simplelog::TerminalMode::Stdout,
-        //     simplelog::ColorChoice::Auto,
-        // ),
-        // TermLogger::new(
-        //     LevelFilter::Warn,
-        //     Config::default(),
-        //     simplelog::TerminalMode::Stdout,
-        //     simplelog::ColorChoice::Auto,
-        // ),
-    ])
-    .unwrap();
+    let args = Args::parse();
+
+    if args.logging {
+        CombinedLogger::init(vec![
+            // WriteLogger::new(
+            //     LevelFilter::Info,
+            //     Config::default(),
+            //     File::create("gb_log_2.log").unwrap(),
+            // ),
+            TermLogger::new(
+                LevelFilter::Debug,
+                Config::default(),
+                simplelog::TerminalMode::Stdout,
+                simplelog::ColorChoice::Auto,
+            ),
+            // TermLogger::new(
+            //     LevelFilter::Info,
+            //     Config::default(),
+            //     simplelog::TerminalMode::Stdout,
+            //     simplelog::ColorChoice::Auto,
+            // ),
+            // TermLogger::new(
+            //     LevelFilter::Warn,
+            //     Config::default(),
+            //     simplelog::TerminalMode::Stdout,
+            //     simplelog::ColorChoice::Auto,
+            // ),
+        ])
+        .unwrap();
+    }
+
+    let mut gameboy = Gameboy::new(&args.rom).unwrap();
+
     let mut screen = Screen::default();
 
-    let mut gameboy: Gameboy =
-        Gameboy::new("./roms/gb-test-roms/cpu_instrs/cpu_instrs.gb").unwrap();
-    // Gameboy::new("./roms/acceptance/timer/div_write.gb").unwrap();
-    // Gameboy::new("./roms/tetris.gb").unwrap();
-    // Gameboy::new("./roms/gb-test-roms/cpu_instrs/individual/02-interrupts.gb").unwrap();
-    gameboy.set_gb_initial_state();
+    debug!("{}", args.bootrom);
 
-    // let _ = gameboy.memory.load_rom("./roms/mgb_boot.bin");
+    if args.bootrom.is_empty() {
+        gameboy.set_gb_initial_state();
+    } else {
+        let _ = gameboy.memory.load_rom(&args.bootrom);
+    }
 
     let mut fps = 0;
-
     screen.window.set_target_fps(60);
-
-    // let cycle_cap: u128 = 4194304;
     let cycle_cap: u128 = 69905;
 
     let mut current_time = Instant::now();

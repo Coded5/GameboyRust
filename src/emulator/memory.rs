@@ -75,9 +75,9 @@ impl Memory {
             return 0xFF;
         }
 
-        // if address < 0x100 && self.memory[0xFF50] == 0 {
-        //     return self.memory[address as usize];
-        // }
+        if address < 0x100 && self.memory[0xFF50] == 0 {
+            return self.memory[address as usize];
+        }
 
         match address {
             0x0000..=0x3FFF => self.mbc.read_byte(address),

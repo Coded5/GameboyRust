@@ -104,5 +104,7 @@ impl Gameboy {
         self.memory.write_byte(0xFF4A, 0);
         self.memory.write_byte(0xFF4B, 0);
         self.memory.write_byte(0xFFFF, 0x00);
+
+        self.memory.write_byte(0xFF50, 1);
     }
 }
