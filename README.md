@@ -42,6 +42,8 @@ Options:
 
 ## Features
 
+✅ Done, ⁉️ Currently implementing, 🚫 Not implemented
+
 |Feature|Status|
 |:----------------|:------:
 CPU|✅|
@@ -54,5 +56,4 @@ MBC5| ⁉️|
 Save State|🚫|
 Command lines|⁉️|
 
-✅ Done, ⁉️ Currently implementing, 🚫 Not implemented
 **There's some code that I would like to refactor because it is an absolute jank**
