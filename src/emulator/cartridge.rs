@@ -1,15 +1,11 @@
 use std::{
-    fmt::Debug,
     fs::{self, File},
     io::{self, Read},
 };
 
 use log::info;
 
-use super::{
-    mbcs::{mbc::MBC, mbc1::MBC1, rom::Rom},
-    memory::Memory,
-};
+use super::mbcs::{mbc::MBC, mbc1::MBC1, rom::Rom};
 
 pub const CART_HEADER_TYPE: u16 = 0x147;
 pub const CART_HEADER_RAM_SIZE: u16 = 0x148;

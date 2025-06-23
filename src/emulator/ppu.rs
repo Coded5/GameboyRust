@@ -1,9 +1,3 @@
-use std::cmp::Ordering;
-
-use log::{debug, info};
-
-use crate::emulator::cpu::{ADDRESS_IE, ADDRESS_IF};
-
 use super::{
     cpu::{request_interrupt, INT_LCD, INT_VBLANK},
     memory::Memory,
@@ -68,7 +62,6 @@ pub struct Ppu {
     oam_buffer: Vec<u16>,
     pub mode: PpuMode,
 
-    mode_change: bool,
     pub finish_frame: bool,
 }
 
@@ -297,9 +290,6 @@ impl Ppu {
         };
         let y = memory.read_byte(LY);
 
-        let scx = memory.read_byte(SCX);
-        let scy = memory.read_byte(SCY);
-
         for &oam_entry_addr in self.oam_buffer.iter() {
             let sprite_y = memory.read_byte(oam_entry_addr);
             let sprite_x = memory.read_byte(oam_entry_addr + 1);
@@ -420,7 +410,6 @@ impl Ppu {
             }
         }
 
-        let mut set_ppu_mode: u8 = 0;
         let ppu_mode = match self.mode {
             PpuMode::VBLANK => 1,
             PpuMode::HBLANK => 0,
@@ -429,7 +418,7 @@ impl Ppu {
         };
 
         memory.write_byte(STAT, memory.read_byte(STAT) & !3);
-        memory.write_byte(STAT, memory.read_byte(STAT) | set_ppu_mode);
+        memory.write_byte(STAT, memory.read_byte(STAT) | ppu_mode);
     }
 }
 
@@ -441,7 +430,6 @@ impl Default for Ppu {
             current_cycle: 0,
             oam_buffer: Vec::new(),
 
-            mode_change: false,
             finish_frame: false,
             window_line: 0,
         }

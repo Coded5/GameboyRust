@@ -5,11 +5,16 @@ const HEIGHT: usize = 144;
 
 pub struct Screen {
     pub window: Window,
-    scale: usize,
+}
+
+impl Default for Screen {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Screen {
-    pub fn new(scale: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             window: Window::new(
                 "Gameboy Emulator",
@@ -21,7 +26,6 @@ impl Screen {
                 },
             )
             .unwrap(),
-            scale,
         }
     }
 

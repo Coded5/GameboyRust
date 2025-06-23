@@ -3,7 +3,7 @@ use crate::emulator::{
     memory::Memory,
 };
 
-use super::operand::{self, Operands};
+use super::operand::Operands;
 
 pub fn daa(cpu: &mut Cpu) {
     let mut a = cpu.a;

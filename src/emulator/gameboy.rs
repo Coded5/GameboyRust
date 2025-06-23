@@ -1,16 +1,7 @@
 use std::io;
 
-use log::info;
-
-use crate::{devices::screen::Screen, emulator::ppu::LY};
-
 use super::{
-    cartridge::load_cartridge,
-    cpu::{Cpu, ADDRESS_IE},
-    joypad::Joypad,
-    memory::Memory,
-    ppu::{Ppu, PpuMode, LCDC, LCDC_OBJ_SIZE, LCDC_WIN_ENABLE, LCDC_WIN_TILEMAP, SCX, SCY, WX, WY},
-    timer::Timer,
+    cartridge::load_cartridge, cpu::Cpu, joypad::Joypad, memory::Memory, ppu::Ppu, timer::Timer,
 };
 
 pub struct Gameboy {
@@ -22,8 +13,6 @@ pub struct Gameboy {
 
     pub accum_cycle: u128,
     pub can_render: bool,
-    fc: i32,
-    interrupted: bool,
 }
 
 impl Gameboy {
@@ -37,8 +26,6 @@ impl Gameboy {
 
             accum_cycle: 0u128,
             can_render: false,
-            interrupted: false,
-            fc: 0,
         })
     }
 
@@ -64,8 +51,6 @@ impl Gameboy {
             self.can_render = true;
             self.ppu.finish_frame = false;
         }
-
-        // info!(target: "GBState", "{pc:04X} A:{a:02X} B:{b:02X} C:{c:02X} D:{d:02X} E:{e:02X} F:{f} HL:{hl:04X} S:{sp:04X} V:{v}");
     }
 
     // TODO: Remove this
@@ -76,69 +61,6 @@ impl Gameboy {
         let c = if self.cpu.c() { "C" } else { "c" };
 
         format!("{}{}{}{}", z, n, h, c)
-    }
-
-    //HACK: Remove this
-    pub fn load_test_ram(&mut self) {
-        let tile_0: [u8; 16] = [
-            0x3C, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x7E, 0x5E, 0x7E, 0x0A, 0x7C, 0x56,
-            0x38, 0x7C,
-        ];
-        let tile_1: [u8; 16] = [
-            0xFF, 0x00, 0x7E, 0xFF, 0x85, 0x81, 0x89, 0x83, 0x93, 0x85, 0xA5, 0x8B, 0xC9, 0x97,
-            0x7E, 0xFF,
-        ];
-
-        let tile_00: [u8; 16] = [
-            0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0x00,
-            0x00, 0x00,
-        ];
-
-        let tile_spr: [u8; 16] = [
-            0x00, 0xFF, 0x02, 0x81, 0x26, 0xA5, 0x26, 0xA5, 0x02, 0x81, 0x42, 0xC3, 0x3E, 0xBD,
-            0x00, 0xFF,
-        ];
-
-        for i in 0..16 {
-            self.memory.write_byte(0x8000 + i as u16, tile_00[i]);
-            self.memory.write_byte(0x8000 + (i + 16) as u16, tile_1[i]);
-            self.memory
-                .write_byte(0x8000 + (i + 32) as u16, tile_spr[i]);
-            self.memory.write_byte(0x8000 + (i + 48) as u16, tile_00[i]);
-        }
-
-        for i in (0x9C00..=0x9FFF) {
-            self.memory.write_byte(i, 1u8);
-        }
-
-        let flip_x = 5u8;
-        let flip_y = 6u8;
-
-        //OAM
-        let y = 20u8;
-        let x = 16u8;
-        let tile_number = 2u8;
-        let spr_flags = (1 << flip_x) | (1 << flip_y);
-
-        self.memory.write_byte(0xFE00, y);
-        self.memory.write_byte(0xFE00 + 1, x);
-        self.memory.write_byte(0xFE00 + 2, tile_number);
-        self.memory.write_byte(0xFE00 + 3, spr_flags);
-
-        self.memory.write_byte(
-            0xFF40,
-            0x91 | (1 << LCDC_WIN_TILEMAP) | (1 << LCDC_WIN_ENABLE) | (1 << LCDC_OBJ_SIZE),
-        );
-
-        self.memory.write_byte(0xFF42, 6);
-        self.memory.write_byte(0xFF43, 6);
-
-        self.memory.write_byte(WX, 20);
-        self.memory.write_byte(WY, 20);
-
-        self.memory.write_byte(0xFF47, 0xE4);
-        self.memory.write_byte(0xFF48, 0xE4);
-        self.memory.write_byte(0xFF49, 0xE4);
     }
 
     pub fn set_gb_initial_state(&mut self) {

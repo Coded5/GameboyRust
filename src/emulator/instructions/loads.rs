@@ -80,7 +80,7 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
             let rhs_raw = cpu.next_byte(memory);
             let rhs = rhs_raw as i8;
 
-            let (res, carry) = cpu.sp.overflowing_add_signed(rhs as i16);
+            let (res, _carry) = cpu.sp.overflowing_add_signed(rhs as i16);
 
             let sp_lo = cpu.sp as u8;
 
@@ -104,8 +104,6 @@ pub fn load16(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: 
             let address = cpu.next_short(memory);
             let lo: u8 = (src & 0xFF) as u8;
             let hi: u8 = ((src >> 8) & 0xFF) as u8;
-
-            //println!("sp: {}, hi: {}, lo: {}", cpu.sp, hi, lo);
 
             memory.write_byte(address, lo);
             memory.write_byte(address + 1, hi);

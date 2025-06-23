@@ -48,6 +48,7 @@ pub fn call(cpu: &mut Cpu, memory: &mut Memory) {
     memory.write_byte(cpu.sp, lo_byte);
 
     let new_address = cpu.next_short(memory);
+
     cpu.pc = new_address;
 }
 
@@ -63,7 +64,7 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
 
     let new_address = cpu.next_short(memory);
 
-    if (!condition) {
+    if !condition {
         return false;
     }
 
@@ -106,7 +107,7 @@ pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
         _ => true,
     };
 
-    if (!condition) {
+    if !condition {
         return false;
     }
 

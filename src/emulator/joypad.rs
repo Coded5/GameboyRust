@@ -1,7 +1,3 @@
-use std::default;
-
-use log::debug;
-
 use super::{
     cpu::{request_interrupt, INT_JOYPAD},
     memory::Memory,

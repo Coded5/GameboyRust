@@ -1,14 +1,12 @@
-use std::fs::File;
-use std::thread;
 use std::time::{Duration, Instant};
 
 use gameboy::{devices::screen::Screen, emulator::gameboy::Gameboy};
+use log::info;
 use log::LevelFilter;
-use log::{debug, info};
 use num_format::{Locale, ToFormattedString};
+use simplelog::CombinedLogger;
 use simplelog::Config;
 use simplelog::TermLogger;
-use simplelog::{CombinedLogger, WriteLogger};
 
 fn main() {
     CombinedLogger::init(vec![
@@ -37,11 +35,13 @@ fn main() {
         // ),
     ])
     .unwrap();
-    let mut screen = Screen::new(4);
+    let mut screen = Screen::default();
 
     let mut gameboy: Gameboy =
-        // Gameboy::new("./roms/gb-test-roms/cpu_instrs/cpu_instrs.gb").unwrap();
-    Gameboy::new("./roms/bgbtest.gb").unwrap();
+        Gameboy::new("./roms/gb-test-roms/cpu_instrs/cpu_instrs.gb").unwrap();
+    // Gameboy::new("./roms/acceptance/timer/div_write.gb").unwrap();
+    // Gameboy::new("./roms/tetris.gb").unwrap();
+    // Gameboy::new("./roms/gb-test-roms/cpu_instrs/individual/02-interrupts.gb").unwrap();
     gameboy.set_gb_initial_state();
 
     // let _ = gameboy.memory.load_rom("./roms/mgb_boot.bin");

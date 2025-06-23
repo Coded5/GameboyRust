@@ -1,7 +1,7 @@
 use crate::emulator::cpu::Cpu;
 use crate::emulator::memory::Memory;
 
-use super::alu8::{self, add};
+use super::alu8;
 use super::inst_group::InstGroup::*;
 use super::loads::{load16, load8};
 use super::opcode::Opcode;
@@ -76,8 +76,8 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
                 _ => panic!("Invalid instruction {}", opcode.mnemonic),
             };
 
-            if (does_branch) {
-                return if (opcode.cycle.len() == 2) {
+            if does_branch {
+                return if opcode.cycle.len() == 2 {
                     opcode.cycle[1]
                 } else {
                     opcode.cycle[0]
@@ -179,7 +179,6 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0x35 => Ok(Opcode::opcode1(ALU8, "DEC", 0x35, 1, vec![12], AddrHL)),
         0x36 => Ok(Opcode::opcode2(LD8, "LD", 0x36, 2, vec![12], AddrHL, U8)),
         0x37 => Ok(Opcode::opcode0(ALU8, "SCF", 0x37, 1, vec![4])),
-        //TODO: Fix this
         0x38 => Ok(Opcode::opcode2(
             BRANCH,
             "JR",
@@ -250,7 +249,6 @@ pub fn get_opcode(fetched_byte: u8) -> Result<Opcode, ()> {
         0x73 => Ok(Opcode::opcode2(LD8, "LD", 0x73, 1, vec![8], AddrHL, E)),
         0x74 => Ok(Opcode::opcode2(LD8, "LD", 0x74, 1, vec![8], AddrHL, H)),
         0x75 => Ok(Opcode::opcode2(LD8, "LD", 0x75, 1, vec![8], AddrHL, L)),
-        //TODO: Implement this
         0x76 => Ok(Opcode::opcode0(MISC, "HALT", 0x76, 1, vec![4])),
         0x77 => Ok(Opcode::opcode2(LD8, "LD", 0x77, 1, vec![8], AddrHL, A)),
         0x78 => Ok(Opcode::opcode2(LD8, "LD", 0x78, 1, vec![4], A, B)),

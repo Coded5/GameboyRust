@@ -9,7 +9,7 @@ pub fn add_sp_i8(cpu: &mut Cpu, memory: &mut Memory) {
     let rhs_raw = cpu.next_byte(memory);
     let rhs = rhs_raw as i8;
 
-    let (res, carry) = cpu.sp.overflowing_add_signed(rhs as i16);
+    let (res, _carry) = cpu.sp.overflowing_add_signed(rhs as i16);
 
     let sp_lo = cpu.sp as u8;
 
@@ -22,7 +22,7 @@ pub fn add_sp_i8(cpu: &mut Cpu, memory: &mut Memory) {
 }
 
 pub fn add(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
-    if (operand1 == Operands::SP && operand2 == Operands::I8) {
+    if operand1 == Operands::SP && operand2 == Operands::I8 {
         add_sp_i8(cpu, memory);
         return;
     }

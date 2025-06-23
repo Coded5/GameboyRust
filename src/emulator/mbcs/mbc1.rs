@@ -1,4 +1,4 @@
-use log::{debug, info, warn};
+use log::{info, warn};
 
 use super::mbc::MBC;
 
@@ -11,11 +11,10 @@ pub struct MBC1 {
     ram: [u8; 0x8000],
 
     ram_enable: bool,
-    ram_size: u32,
 }
 
 impl MBC1 {
-    pub fn new(rom: Vec<u8>, ram_size: u32) -> Self {
+    pub fn new(rom: Vec<u8>, _ram_size: u32) -> Self {
         Self {
             rom,
             ram: [0u8; 0x8000],
@@ -23,8 +22,6 @@ impl MBC1 {
             rom_bank: 1,
             ram_enable: false,
             rom_banking: false,
-
-            ram_size,
         }
     }
 
@@ -44,7 +41,7 @@ impl MBC1 {
 
     pub fn change_rom_bank_hi(&mut self, value: u8) {
         self.rom_bank &= 0x1F;
-        self.rom_bank |= (value & 0xE0);
+        self.rom_bank |= value & 0xE0;
 
         if self.rom_bank == 0 {
             self.rom_bank = 1;
@@ -65,7 +62,7 @@ impl MBC1 {
         info!("Changing to rom bank {:02X}", self.rom_bank);
     }
 
-    pub fn enable_ram(&mut self, address: u16, value: u8) {
+    pub fn enable_ram(&mut self, value: u8) {
         self.ram_enable = (value & 0x0F) == 0x0A;
     }
 }
@@ -73,7 +70,7 @@ impl MBC1 {
 impl MBC for MBC1 {
     fn handle_banking(&mut self, address: u16, value: u8) {
         match address {
-            0x0000..0x2000 => self.enable_ram(address, value),
+            0x0000..0x2000 => self.enable_ram(value),
             0x2000..0x4000 => self.change_rom_bank_lo(value),
             0x4000..0x6000 => {
                 if self.rom_banking {

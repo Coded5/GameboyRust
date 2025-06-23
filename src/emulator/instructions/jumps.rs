@@ -24,7 +24,7 @@ pub fn jpccnn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2:
     };
 
     let address = cpu.next_short(memory);
-    if (condition) {
+    if condition {
         cpu.pc = address;
 
         return true;
@@ -41,7 +41,7 @@ pub fn jr(cpu: &mut Cpu, memory: &mut Memory) {
     cpu.pc = res;
 }
 
-pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) -> bool {
+pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, _operand2: Operands) -> bool {
     let condition = match operand1 {
         Operands::JR_Z => cpu.z(),
         Operands::JR_NZ => !cpu.z(),
@@ -50,7 +50,7 @@ pub fn jrccn(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: O
         _ => true,
     };
 
-    if (condition) {
+    if condition {
         jr(cpu, memory);
         true
     } else {

@@ -1,16 +1,9 @@
-use std::{io::Write, process::exit};
-
-use log::{debug, info};
-
-use crate::emulator::ppu::LY;
-
 use super::{
     instructions::{
         opcode::Opcode,
         opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode},
-        stack,
     },
-    memory::{self, Memory},
+    memory::Memory,
 };
 
 pub const Z: u8 = 7;
@@ -139,6 +132,7 @@ impl Cpu {
         cycle
     }
 
+    #[allow(dead_code)]
     fn format_flag(&self) -> String {
         let z = if self.z() { "Z" } else { "z" };
         let n = if self.n() { "N" } else { "n" };
@@ -149,21 +143,13 @@ impl Cpu {
     }
 
     pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
-        // info!(target: "Doctor", "{:04X} A:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} F:{} HL:{:04X} SP:{:04X}", self.pc, self.a, self.b, self.c, self.d, self.e, self.format_flag(), self.hl(), self.sp);
-
         if self.i_enable_flag {
             self.ime = true;
             self.i_enable_flag = false;
         }
 
         //Fetch
-        // let opcode_byte = memory.read_byte(self.pc);
         let opcode_byte = self.next_byte(memory);
-        // println!("Opcode {:X} at {:X}", opcode_byte, self.pc);
-
-        // if opcode_byte == 0x40 {
-        //     exit(0);
-        // }
 
         //Decode
         let opcode = if opcode_byte == 0xCB {
@@ -195,9 +181,6 @@ impl Cpu {
         //Execute
         let time = execute_opcode(self, memory, opcode.clone());
         self.f &= 0xF0;
-        // self.pc = self.pc.wrapping_add(1);
-
-        // info!(target: "CPU", "PC: {:04X} A: {:02X} B: {:02X} C: {:02X} D: {:02X} E: {:02X} H: {:02X} L: {:02X} ", self.pc, self.a, self.b, self.c, self.d, self.e, self.h, self.l);
 
         if !increment_pc {
             self.pc -= opcode.length as u16;
