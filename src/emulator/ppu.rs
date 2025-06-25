@@ -133,10 +133,8 @@ impl Ppu {
         let mut current_scanline = memory.read_byte(LY);
         current_scanline = current_scanline.wrapping_add(1);
 
-        memory.write_byte(LY, current_scanline);
-
         if current_scanline > 154 {
-            memory.write_byte(LY, 0);
+            current_scanline = 0;
             self.mode = PpuMode::OAM_SCAN;
             self.finish_frame = true;
         } else if current_scanline >= 144 {
@@ -151,6 +149,7 @@ impl Ppu {
             }
         }
 
+        memory.write_byte(LY, current_scanline);
         let lyc = memory.read_byte(LYC);
 
         if lyc == current_scanline {
