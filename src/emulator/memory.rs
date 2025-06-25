@@ -2,6 +2,8 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::io::{self, Write};
 
+use log::warn;
+
 use super::mbcs::mbc::MBC;
 use super::timer::DIV;
 
@@ -106,12 +108,12 @@ impl Memory {
         }
 
         if (0xFE00..=0xFE9F).contains(&address) {
-            // warn!("OAM Accessed during lock");
+            warn!(target: "Memory","OAM Accessed during lock");
             // return;
         }
 
         if (0x8000..=0x9FFF).contains(&address) {
-            // warn!("VRAM Accessed during lock");
+            warn!(target: "Memory","VRAM Accessed during lock");
             // return;
         }
 

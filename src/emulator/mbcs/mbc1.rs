@@ -36,7 +36,7 @@ impl MBC1 {
     pub fn change_ram_bank(&mut self, value: u8) {
         self.ram_bank = value & 3;
 
-        info!("Change ram bank to {:02X}", self.ram_bank);
+        info!(target: "MBC", "Change ram bank to {:02X}", self.ram_bank);
     }
 
     pub fn change_rom_bank_hi(&mut self, value: u8) {
@@ -47,7 +47,7 @@ impl MBC1 {
             self.rom_bank = 1;
         }
 
-        info!("Changing to rom bank {:02X}", self.rom_bank);
+        info!(target: "MBC", "Changing to rom bank {:02X}", self.rom_bank);
     }
 
     pub fn change_rom_bank_lo(&mut self, value: u8) {
@@ -59,7 +59,7 @@ impl MBC1 {
             self.rom_bank = 1;
         }
 
-        info!("Changing to rom bank {:02X}", self.rom_bank);
+        info!(target: "MBC", "Changing to rom bank {:02X}", self.rom_bank);
     }
 
     pub fn enable_ram(&mut self, value: u8) {
@@ -104,7 +104,7 @@ impl MBC for MBC1 {
 
     fn write_byte(&mut self, address: u16, value: u8) {
         if !(0xA000..=0xBFFF).contains(&address) {
-            warn!("Attempted to write to ROM at address {:04X}", address);
+            warn!(target: "MBC", "Attempted to write to ROM at address {:04X}", address);
             return;
         }
 

@@ -1,3 +1,5 @@
+use log::debug;
+
 use super::{
     cpu::{request_interrupt, INT_LCD, INT_VBLANK},
     memory::Memory,
@@ -155,10 +157,11 @@ impl Ppu {
             set_stat(memory, 2);
 
             if test_stat(memory, STAT_LYC_INT) {
-                // debug!(
-                //     "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
-                //     self.mode, current_scanline, current_scanline
-                // );
+                debug!(
+                    target: "PPU",
+                    "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
+                    self.mode, current_scanline, current_scanline
+                );
                 request_interrupt(INT_LCD, memory);
             }
         } else {

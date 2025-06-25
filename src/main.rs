@@ -1,3 +1,4 @@
+use std::env;
 use std::time::{Duration, Instant};
 
 use gameboy::{devices::screen::Screen, emulator::gameboy::Gameboy};
@@ -5,9 +6,10 @@ use log::debug;
 use log::info;
 use log::LevelFilter;
 use num_format::{Locale, ToFormattedString};
-use simplelog::CombinedLogger;
-use simplelog::Config;
-use simplelog::TermLogger;
+// use simplelog::CombinedLogger;
+// use simplelog::Config;
+// use simplelog::ConfigBuilder;
+// use simplelog::TermLogger;
 
 use clap::Parser;
 
@@ -31,32 +33,7 @@ fn main() {
     let args = Args::parse();
 
     if args.logging {
-        CombinedLogger::init(vec![
-            // WriteLogger::new(
-            //     LevelFilter::Info,
-            //     Config::default(),
-            //     File::create("gb_log_2.log").unwrap(),
-            // ),
-            TermLogger::new(
-                LevelFilter::Debug,
-                Config::default(),
-                simplelog::TerminalMode::Stdout,
-                simplelog::ColorChoice::Auto,
-            ),
-            // TermLogger::new(
-            //     LevelFilter::Info,
-            //     Config::default(),
-            //     simplelog::TerminalMode::Stdout,
-            //     simplelog::ColorChoice::Auto,
-            // ),
-            // TermLogger::new(
-            //     LevelFilter::Warn,
-            //     Config::default(),
-            //     simplelog::TerminalMode::Stdout,
-            //     simplelog::ColorChoice::Auto,
-            // ),
-        ])
-        .unwrap();
+        env_logger::init();
     }
 
     let mut gameboy = Gameboy::new(&args.rom).unwrap();

@@ -1,3 +1,7 @@
+use std::process::exit;
+
+use log::info;
+
 use super::{
     instructions::{
         opcode::Opcode,
