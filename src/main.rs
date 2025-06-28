@@ -43,9 +43,9 @@ fn main() {
     debug!("{}", args.bootrom);
 
     if args.bootrom.is_empty() {
-        gameboy.set_gb_initial_state();
+        gameboy.no_bootrom_init();
     } else {
-        let _ = gameboy.memory.load_rom(&args.bootrom);
+        // let _ = gameboy.memory.load_rom(&args.bootrom);
     }
 
     let mut fps = 0;
@@ -64,14 +64,18 @@ fn main() {
             //S = select
             //A = Z
             //B = X
-            gameboy.joypad.start = !screen.window.is_key_down(minifb::Key::A);
-            gameboy.joypad.select = !screen.window.is_key_down(minifb::Key::S);
-            gameboy.joypad.btn_a = !screen.window.is_key_down(minifb::Key::Z);
-            gameboy.joypad.btn_b = !screen.window.is_key_down(minifb::Key::X);
-            gameboy.joypad.up = !screen.window.is_key_down(minifb::Key::Up);
-            gameboy.joypad.down = !screen.window.is_key_down(minifb::Key::Down);
-            gameboy.joypad.left = !screen.window.is_key_down(minifb::Key::Left);
-            gameboy.joypad.right = !screen.window.is_key_down(minifb::Key::Right);
+
+            let mut joypad = gameboy.joypad.borrow_mut();
+            joypad.start = !screen.window.is_key_down(minifb::Key::A);
+            joypad.select = !screen.window.is_key_down(minifb::Key::S);
+            joypad.btn_a = !screen.window.is_key_down(minifb::Key::Z);
+            joypad.btn_b = !screen.window.is_key_down(minifb::Key::X);
+            joypad.up = !screen.window.is_key_down(minifb::Key::Up);
+            joypad.down = !screen.window.is_key_down(minifb::Key::Down);
+            joypad.left = !screen.window.is_key_down(minifb::Key::Left);
+            joypad.right = !screen.window.is_key_down(minifb::Key::Right);
+            drop(joypad);
+
             gameboy.tick();
         }
 
@@ -89,10 +93,10 @@ fn main() {
             current_time = Instant::now();
         }
 
-        if screen.window.is_key_down(minifb::Key::O) && !d {
-            let _ = gameboy.memory.dump_oam_to_file("oam.bin");
-            d = true;
-        }
+        // if screen.window.is_key_down(minifb::Key::O) && !d {
+        //     let _ = gameboy.memory.dump_oam_to_file("oam.bin");
+        //     d = true;
+        // }
 
         if screen.window.is_key_down(minifb::Key::O) {
             d = false;

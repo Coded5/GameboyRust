@@ -29,7 +29,7 @@ impl Screen {
         }
     }
 
-    pub fn render(&mut self, buffer: &[u8; 160 * 144]) {
+    pub fn render(&mut self, buffer: [u8; 160 * 144]) {
         let mut frame_buffer: Vec<u32> = Vec::new();
 
         for pixel in buffer {

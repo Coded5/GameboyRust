@@ -1,6 +1,6 @@
 use crate::emulator::{
+    bus::Bus,
     cpu::{Cpu, C, H, N, Z},
-    memory::Memory,
 };
 
 use super::operand::Operands;
@@ -59,9 +59,9 @@ pub fn rra(cpu: &mut Cpu) {
     cpu.a = res;
 }
 
-pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn rlc(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -81,7 +81,7 @@ pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, msb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,
@@ -93,9 +93,9 @@ pub fn rlc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 }
 
-pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn rrc(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -115,7 +115,7 @@ pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, lsb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,
@@ -127,9 +127,9 @@ pub fn rrc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 }
 
-pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn rr(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -150,7 +150,7 @@ pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, lsb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,
@@ -162,9 +162,9 @@ pub fn rr(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 }
 
-pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn rl(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -185,7 +185,7 @@ pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, msb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,
@@ -197,9 +197,9 @@ pub fn rl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 }
 
-pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn sla(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -219,7 +219,7 @@ pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, msb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,
@@ -231,9 +231,9 @@ pub fn sla(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 }
 
-pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn sra(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -256,7 +256,7 @@ pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, lsb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,
@@ -268,9 +268,9 @@ pub fn sra(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     };
 }
 
-pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn srl(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u8 = match operand {
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         Operands::A => cpu.a,
         Operands::B => cpu.b,
         Operands::C => cpu.c,
@@ -290,7 +290,7 @@ pub fn srl(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     cpu.set(C, lsb == 1);
 
     match operand {
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         Operands::A => cpu.a = res,
         Operands::B => cpu.b = res,
         Operands::C => cpu.c = res,

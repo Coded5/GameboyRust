@@ -1,5 +1,7 @@
+use crate::emulator::bus::Bus;
 use crate::emulator::cpu::Cpu;
-use crate::emulator::memory::Memory;
+use crate::emulator::gameboy::Shared;
+use crate::emulator::interrupt::InterruptState;
 
 use super::alu8;
 use super::inst_group::InstGroup::*;
@@ -9,29 +11,34 @@ use super::operand::Operands::{self, *};
 use super::stack::{pop, push};
 use super::{alu16, bits, interrupts, jumps, misc, rotates, stack};
 
-pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32 {
+pub fn execute_opcode(
+    cpu: &mut Cpu,
+    bus: &mut Bus,
+    interrupt: Shared<InterruptState>,
+    opcode: Opcode,
+) -> i32 {
     let operand1 = opcode.operand1.unwrap_or(Operands::NONE);
     let operand2 = opcode.operand2.unwrap_or(Operands::NONE);
 
     match opcode.group {
-        LD8 => load8(cpu, memory, operand1, operand2),
+        LD8 => load8(cpu, bus, operand1, operand2),
         LD16 => match opcode.mnemonic.as_str() {
-            "LD" => load16(cpu, memory, operand1, operand2),
-            "PUSH" => push(cpu, memory, operand1),
-            "POP" => pop(cpu, memory, operand1),
+            "LD" => load16(cpu, bus, operand1, operand2),
+            "PUSH" => push(cpu, bus, operand1),
+            "POP" => pop(cpu, bus, operand1),
             _ => panic!("Invalid Instruction {}", opcode.mnemonic),
         },
         ALU8 => match opcode.mnemonic.as_str() {
-            "ADD" => alu8::add(cpu, memory, operand1, operand2),
-            "ADC" => alu8::adc(cpu, memory, operand1, operand2),
-            "SUB" => alu8::sub(cpu, memory, operand1),
-            "SBC" => alu8::sbc(cpu, memory, operand1, operand2),
-            "AND" => alu8::and(cpu, memory, operand1),
-            "OR" => alu8::or(cpu, memory, operand1),
-            "XOR" => alu8::xor(cpu, memory, operand1),
-            "CP" => alu8::cp(cpu, memory, operand1),
-            "INC" => alu8::inc(cpu, memory, operand1),
-            "DEC" => alu8::dec(cpu, memory, operand1),
+            "ADD" => alu8::add(cpu, bus, operand1, operand2),
+            "ADC" => alu8::adc(cpu, bus, operand1, operand2),
+            "SUB" => alu8::sub(cpu, bus, operand1),
+            "SBC" => alu8::sbc(cpu, bus, operand1, operand2),
+            "AND" => alu8::and(cpu, bus, operand1),
+            "OR" => alu8::or(cpu, bus, operand1),
+            "XOR" => alu8::xor(cpu, bus, operand1),
+            "CP" => alu8::cp(cpu, bus, operand1),
+            "INC" => alu8::inc(cpu, bus, operand1),
+            "DEC" => alu8::dec(cpu, bus, operand1),
             "SCF" => alu8::scf(cpu),
             "CCF" => alu8::ccf(cpu),
             "CPL" => alu8::cpl(cpu),
@@ -39,9 +46,9 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
             _ => panic!("Invalid instruction {}", opcode.mnemonic),
         },
         ALU16 => match opcode.mnemonic.as_str() {
-            "ADD" => alu16::add(cpu, memory, operand1, operand2),
-            "INC" => alu16::inc(cpu, memory, operand1),
-            "DEC" => alu16::dec(cpu, memory, operand1),
+            "ADD" => alu16::add(cpu, bus, operand1, operand2),
+            "INC" => alu16::inc(cpu, bus, operand1),
+            "DEC" => alu16::dec(cpu, bus, operand1),
             _ => panic!("Invalid instruction {}", opcode.mnemonic),
         },
         RSB8 => match opcode.mnemonic.as_str() {
@@ -49,30 +56,30 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
             "RRA" => rotates::rra(cpu),
             "RLCA" => rotates::rlca(cpu),
             "RRCA" => rotates::rrca(cpu),
-            "RRC" => rotates::rrc(cpu, memory, operand1),
-            "SWAP" => misc::swap(cpu, memory, operand1),
-            "RR" => rotates::rr(cpu, memory, operand1),
-            "RLC" => rotates::rlc(cpu, memory, operand1),
-            "RL" => rotates::rl(cpu, memory, operand1),
-            "BIT" => bits::bit(cpu, memory, operand1, operand2),
-            "SET" => bits::set(cpu, memory, operand1, operand2),
-            "SLA" => rotates::sla(cpu, memory, operand1),
-            "SRL" => rotates::srl(cpu, memory, operand1),
-            "RES" => bits::res(cpu, memory, operand1, operand2),
-            "SRA" => rotates::sra(cpu, memory, operand1),
+            "RRC" => rotates::rrc(cpu, bus, operand1),
+            "SWAP" => misc::swap(cpu, bus, operand1),
+            "RR" => rotates::rr(cpu, bus, operand1),
+            "RLC" => rotates::rlc(cpu, bus, operand1),
+            "RL" => rotates::rl(cpu, bus, operand1),
+            "BIT" => bits::bit(cpu, bus, operand1, operand2),
+            "SET" => bits::set(cpu, bus, operand1, operand2),
+            "SLA" => rotates::sla(cpu, bus, operand1),
+            "SRL" => rotates::srl(cpu, bus, operand1),
+            "RES" => bits::res(cpu, bus, operand1, operand2),
+            "SRA" => rotates::sra(cpu, bus, operand1),
             _ => panic!("Invalid instruction {}", opcode.mnemonic),
         },
         BRANCH => {
             //TODO: Jump have branched cycle
             //Plz add it later
             let does_branch: bool = match opcode.mnemonic.as_str() {
-                "JP" => jumps::jpccnn(cpu, memory, operand1, operand2),
-                "JPHL" => jumps::jphl(cpu, memory),
-                "JR" => jumps::jrccn(cpu, memory, operand1, operand2),
-                "RST" => stack::rst(cpu, memory, operand1),
-                "CALL" => stack::call_cc(cpu, memory, operand1),
-                "RET" => stack::ret_cc(cpu, memory, operand1),
-                "RETI" => stack::reti(cpu, memory),
+                "JP" => jumps::jpccnn(cpu, bus, operand1, operand2),
+                "JPHL" => jumps::jphl(cpu, bus),
+                "JR" => jumps::jrccn(cpu, bus, operand1, operand2),
+                "RST" => stack::rst(cpu, bus, operand1),
+                "CALL" => stack::call_cc(cpu, bus, operand1),
+                "RET" => stack::ret_cc(cpu, bus, operand1),
+                "RETI" => stack::reti(cpu, bus, interrupt), //NOTE:
                 _ => panic!("Invalid instruction {}", opcode.mnemonic),
             };
 
@@ -85,10 +92,10 @@ pub fn execute_opcode(cpu: &mut Cpu, memory: &mut Memory, opcode: Opcode) -> i32
             }
         }
         MISC => match opcode.mnemonic.as_str() {
-            "DI" => interrupts::di(cpu),
+            "DI" => interrupts::di(interrupt), //NOTE:
             "NOP" => (),
             "STOP" => (),
-            "HALT" => cpu.halt(memory),
+            "HALT" => cpu.halt(interrupt), //NOTE:
             "EI" => interrupts::ei(cpu),
             _ => panic!("Invalid Instruction {}", opcode.mnemonic),
         },

@@ -1,32 +1,24 @@
 use std::process::exit;
 
-use log::info;
+use log::{debug, info};
 
 use super::{
+    bus::Bus,
+    gameboy::Shared,
     instructions::{
         opcode::Opcode,
         opcode_table::{execute_opcode, get_opcode, get_prefixed_opcode},
     },
-    memory::Memory,
+    interrupt::{
+        InterruptState, ADDRESS_IE, ADDRESS_IF, INT_JOYPAD, INT_LCD, INT_SERIAL, INT_TIMER,
+        INT_VBLANK,
+    },
 };
 
 pub const Z: u8 = 7;
 pub const N: u8 = 6;
 pub const H: u8 = 5;
 pub const C: u8 = 4;
-
-pub const ADDRESS_IE: u16 = 0xFFFF;
-pub const ADDRESS_IF: u16 = 0xFF0F;
-
-pub const INT_JOYPAD: u8 = 4;
-pub const INT_SERIAL: u8 = 3;
-pub const INT_TIMER: u8 = 2;
-pub const INT_LCD: u8 = 1;
-pub const INT_VBLANK: u8 = 0;
-
-pub fn request_interrupt(interrupt: u8, memory: &mut Memory) {
-    memory.write_byte(ADDRESS_IF, memory.read_byte(ADDRESS_IF) | (1 << interrupt));
-}
 
 #[derive(Debug)]
 pub struct Cpu {
@@ -40,11 +32,8 @@ pub struct Cpu {
     pub l: u8,
     pub sp: u16,
     pub pc: u16,
-    pub ime: bool,
-
     pub halt: bool,
     pub halt_bug: bool,
-
     pub i_enable_flag: bool,
 }
 
@@ -65,19 +54,22 @@ impl Cpu {
             halt: false,
             halt_bug: false,
 
-            ime: false,
+            // ime: false,
             i_enable_flag: false,
+            //
+            // interrupt_enable: 0u8,
+            // interrupt_flags: 0u8,
         }
     }
 
-    pub fn next_byte(&mut self, memory: &mut Memory) -> u8 {
+    pub fn next_byte(&mut self, bus: &mut Bus) -> u8 {
         self.pc = self.pc.wrapping_add(1);
-        memory.read_byte(self.pc.wrapping_sub(1))
+        bus.read_byte(self.pc.wrapping_sub(1))
     }
 
-    pub fn next_short(&mut self, memory: &mut Memory) -> u16 {
-        let lo = self.next_byte(memory) as u16;
-        let hi = self.next_byte(memory) as u16;
+    pub fn next_short(&mut self, bus: &mut Bus) -> u16 {
+        let lo = self.next_byte(bus) as u16;
+        let hi = self.next_byte(bus) as u16;
 
         (hi << 8) | lo
     }
@@ -118,8 +110,8 @@ impl Cpu {
         line
     }
 
-    pub fn step(&mut self, memory: &mut Memory) -> i32 {
-        let interrupted = self.perform_interrupt(memory);
+    pub fn step(&mut self, bus: &mut Bus, interrupt: Shared<InterruptState>) -> i32 {
+        let interrupted = self.perform_interrupt(bus, interrupt.clone());
 
         if self.halt {
             if interrupted {
@@ -130,7 +122,7 @@ impl Cpu {
             }
         }
 
-        let cycle = self.run(memory, !self.halt_bug);
+        let cycle = self.run(bus, interrupt, !self.halt_bug);
         self.halt_bug = false;
 
         cycle
@@ -146,19 +138,24 @@ impl Cpu {
         format!("{}{}{}{}", z, n, h, c)
     }
 
-    pub fn run(&mut self, memory: &mut Memory, increment_pc: bool) -> i32 {
+    pub fn run(
+        &mut self,
+        bus: &mut Bus,
+        interrupt: Shared<InterruptState>,
+        increment_pc: bool,
+    ) -> i32 {
         if self.i_enable_flag {
-            self.ime = true;
+            interrupt.borrow_mut().ime = true;
             self.i_enable_flag = false;
         }
 
         //Fetch
-        let opcode_byte = self.next_byte(memory);
+        let opcode_byte = self.next_byte(bus);
 
         //Decode
         let opcode = if opcode_byte == 0xCB {
-            // let cb_opcode_byte = memory.read_byte(self.pc);
-            let cb_opcode_byte = self.next_byte(memory);
+            // let cb_opcode_byte = bus.read_byte(self.pc);
+            let cb_opcode_byte = self.next_byte(bus);
 
             get_prefixed_opcode(cb_opcode_byte)
         } else {
@@ -166,24 +163,25 @@ impl Cpu {
                 .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
-        // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
-        // let tpc = self.pc;
-        // (0..opcode.length - 1).for_each(|i| {
-        //     data[i] = memory.read_byte(tpc + i as u16);
-        // });
-        // debug!(
-        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X} SP={:04X}",
-        //     self.pc - 1,
-        //     Cpu::disassemble_opcode(&opcode, data),
-        //     self.af(),
-        //     self.bc(),
-        //     self.de(),
-        //     self.hl(),
-        //     self.sp
-        // );
+        let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
+        let tpc = self.pc;
+        (0..opcode.length - 1).for_each(|i| {
+            data[i] = bus.read_byte(tpc + i as u16);
+        });
+        debug!(
+            target: "CPU",
+            "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X} SP={:04X}",
+            self.pc - 1,
+            Cpu::disassemble_opcode(&opcode, data),
+            self.af(),
+            self.bc(),
+            self.de(),
+            self.hl(),
+            self.sp
+        );
 
         //Execute
-        let time = execute_opcode(self, memory, opcode.clone());
+        let time = execute_opcode(self, bus, interrupt, opcode.clone());
         self.f &= 0xF0;
 
         if !increment_pc {
@@ -193,46 +191,20 @@ impl Cpu {
         time
     }
 
-    pub fn is_interrupt_enabled(&self, interrupt: u8, memory: &Memory) -> bool {
-        (memory.read_byte(ADDRESS_IE) >> interrupt) & 0x1 == 1
-    }
-
-    pub fn is_interrupt_requested(&self, interrupt: u8, memory: &Memory) -> bool {
-        ((memory.read_byte(ADDRESS_IF) & memory.read_byte(ADDRESS_IE)) >> interrupt) & 0x1 == 1
-    }
-
-    pub fn set_ie(&self, value: u8, memory: &mut Memory) {
-        memory.write_byte(ADDRESS_IE, value);
-    }
-
-    pub fn set_if(&self, value: u8, memory: &mut Memory) {
-        memory.write_byte(ADDRESS_IF, value);
-    }
-
-    pub fn get_ie(&self, memory: &Memory) -> u8 {
-        memory.read_byte(ADDRESS_IE)
-    }
-
-    pub fn get_if(&self, memory: &Memory) -> u8 {
-        memory.read_byte(ADDRESS_IF)
-    }
-
-    pub fn perform_interrupt(&mut self, memory: &mut Memory) -> bool {
-        let ie = memory.read_byte(ADDRESS_IE);
-        let if_ = memory.read_byte(ADDRESS_IF);
-
-        if ie & if_ == 0 {
+    pub fn perform_interrupt(&mut self, bus: &mut Bus, int: Shared<InterruptState>) -> bool {
+        let mut interrupt = int.borrow_mut();
+        if interrupt.interrupt_enable & interrupt.interrupt_flag == 0 {
             return false;
         } else {
             self.halt = false;
         }
 
-        if !self.ime {
+        if !interrupt.ime {
             return false;
         }
 
         //Interrupt are disabled
-        self.ime = false;
+        interrupt.ime = false;
 
         //Calling interrupt
         //Push PC to stack
@@ -240,26 +212,27 @@ impl Cpu {
         let lo_byte = (self.pc & 0xFF) as u8;
 
         self.sp -= 1;
-        memory.write_byte(self.sp, hi_byte);
+        bus.write_byte(self.sp, hi_byte);
         self.sp -= 1;
-        memory.write_byte(self.sp, lo_byte);
+        bus.write_byte(self.sp, lo_byte);
 
         //Get interrupt address
-        let (address, clear_bit): (u16, u8) = if self.is_interrupt_requested(INT_VBLANK, memory) {
+        let (address, clear_bit): (u16, u8) = if interrupt.is_requested(INT_VBLANK) {
             (0x40, INT_VBLANK)
-        } else if self.is_interrupt_requested(INT_LCD, memory) {
+        } else if interrupt.is_requested(INT_LCD) {
             (0x48, INT_LCD)
-        } else if self.is_interrupt_requested(INT_TIMER, memory) {
+        } else if interrupt.is_requested(INT_TIMER) {
             (0x50, INT_TIMER)
-        } else if self.is_interrupt_requested(INT_SERIAL, memory) {
+        } else if interrupt.is_requested(INT_SERIAL) {
             (0x58, INT_SERIAL)
-        } else if self.is_interrupt_requested(INT_JOYPAD, memory) {
+        } else if interrupt.is_requested(INT_JOYPAD) {
             (0x60, INT_JOYPAD)
         } else {
             panic!("Unknown requested interrupt!")
         };
 
-        memory.write_byte(ADDRESS_IF, memory.read_byte(ADDRESS_IF) & !(1 << clear_bit));
+        // bus.write_byte(ADDRESS_IF, bus.read_byte(ADDRESS_IF) & !(1 << clear_bit));
+        interrupt.interrupt_flag &= !(1 << clear_bit);
 
         self.pc = address;
         true
@@ -316,11 +289,9 @@ impl Cpu {
         self.l = (val & 0xff) as u8;
     }
 
-    pub fn halt(&mut self, memory: &Memory) {
-        let ie = memory.read_byte(ADDRESS_IE);
-        let if_ = memory.read_byte(ADDRESS_IF);
-
-        if !self.ime && (ie & if_ != 0) {
+    pub fn halt(&mut self, interrupt: Shared<InterruptState>) {
+        let int = interrupt.borrow();
+        if !int.ime && int.have_pending() {
             self.halt = false;
             self.halt_bug = true;
         } else {

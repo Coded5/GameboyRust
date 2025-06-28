@@ -1,11 +1,11 @@
 use crate::emulator::{
+    bus::Bus,
     cpu::{Cpu, C, H, N, Z},
-    memory::Memory,
 };
 
 use super::operand::Operands;
 
-pub fn swap(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn swap(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src = match operand {
         Operands::A => cpu.a,
         Operands::B => cpu.b,
@@ -14,7 +14,7 @@ pub fn swap(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -35,7 +35,7 @@ pub fn swap(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
         Operands::E => cpu.e = res,
         Operands::H => cpu.h = res,
         Operands::L => cpu.l = res,
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
 }

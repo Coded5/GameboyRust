@@ -1,8 +1,8 @@
-use crate::emulator::{cpu::Cpu, memory::Memory};
+use crate::emulator::{bus::Bus, cpu::Cpu, gameboy::Shared, interrupt::InterruptState};
 
 use super::operand::Operands;
 
-pub fn push(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
+pub fn push(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
     let src: u16 = match operand {
         Operands::AF => cpu.af(),
         Operands::BC => cpu.bc(),
@@ -15,15 +15,15 @@ pub fn push(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     let hi: u8 = ((src >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    memory.write_byte(cpu.sp, hi);
+    bus.write_byte(cpu.sp, hi);
     cpu.sp -= 1;
-    memory.write_byte(cpu.sp, lo);
+    bus.write_byte(cpu.sp, lo);
 }
 
-pub fn pop(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
-    let lo = memory.read_byte(cpu.sp) as u16;
+pub fn pop(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) {
+    let lo = bus.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
-    let hi = memory.read_byte(cpu.sp) as u16;
+    let hi = bus.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
 
     let res = (hi << 8) | lo;
@@ -37,22 +37,22 @@ pub fn pop(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) {
     }
 }
 
-pub fn call(cpu: &mut Cpu, memory: &mut Memory) {
+pub fn call(cpu: &mut Cpu, bus: &mut Bus) {
     let address = cpu.pc;
     let lo_byte: u8 = (address & 0xFF) as u8;
     let hi_byte: u8 = ((address >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    memory.write_byte(cpu.sp, hi_byte);
+    bus.write_byte(cpu.sp, hi_byte);
     cpu.sp -= 1;
-    memory.write_byte(cpu.sp, lo_byte);
+    bus.write_byte(cpu.sp, lo_byte);
 
-    let new_address = cpu.next_short(memory);
+    let new_address = cpu.next_short(bus);
 
     cpu.pc = new_address;
 }
 
-pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
+pub fn call_cc(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) -> bool {
     let condition = match operand {
         Operands::JR_Z => cpu.z(),
         Operands::JR_NZ => !cpu.z(),
@@ -62,7 +62,7 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
         _ => panic!(),
     };
 
-    let new_address = cpu.next_short(memory);
+    let new_address = cpu.next_short(bus);
 
     if !condition {
         return false;
@@ -73,32 +73,32 @@ pub fn call_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     let hi_byte: u8 = ((address >> 8) & 0xFF) as u8;
 
     cpu.sp -= 1;
-    memory.write_byte(cpu.sp, hi_byte);
+    bus.write_byte(cpu.sp, hi_byte);
     cpu.sp -= 1;
-    memory.write_byte(cpu.sp, lo_byte);
+    bus.write_byte(cpu.sp, lo_byte);
 
     cpu.pc = new_address;
 
     true
 }
 
-pub fn ret(cpu: &mut Cpu, memory: &mut Memory) {
-    let lo = memory.read_byte(cpu.sp) as u16;
+pub fn ret(cpu: &mut Cpu, bus: &mut Bus) {
+    let lo = bus.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
-    let hi = memory.read_byte(cpu.sp) as u16;
+    let hi = bus.read_byte(cpu.sp) as u16;
     cpu.sp += 1;
 
     cpu.pc = (hi << 8) | lo;
 }
 
-pub fn reti(cpu: &mut Cpu, memory: &mut Memory) -> bool {
-    cpu.ime = true;
-    ret(cpu, memory);
+pub fn reti(cpu: &mut Cpu, bus: &mut Bus, interrupt: Shared<InterruptState>) -> bool {
+    interrupt.borrow_mut().ime = true;
+    ret(cpu, bus);
 
     false
 }
 
-pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
+pub fn ret_cc(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) -> bool {
     let condition = match operand {
         Operands::JR_Z => cpu.z(),
         Operands::JR_NZ => !cpu.z(),
@@ -111,11 +111,11 @@ pub fn ret_cc(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
         return false;
     }
 
-    ret(cpu, memory);
+    ret(cpu, bus);
     true
 }
 
-pub fn rst(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
+pub fn rst(cpu: &mut Cpu, bus: &mut Bus, operand: Operands) -> bool {
     let address = match operand {
         Operands::H28 => 0x28,
         Operands::H00 => 0x00,
@@ -129,9 +129,9 @@ pub fn rst(cpu: &mut Cpu, memory: &mut Memory, operand: Operands) -> bool {
     };
 
     cpu.sp = cpu.sp.wrapping_sub(1);
-    memory.write_byte(cpu.sp, ((cpu.pc >> 8) & 0xFF) as u8);
+    bus.write_byte(cpu.sp, ((cpu.pc >> 8) & 0xFF) as u8);
     cpu.sp = cpu.sp.wrapping_sub(1);
-    memory.write_byte(cpu.sp, (cpu.pc & 0xFF) as u8);
+    bus.write_byte(cpu.sp, (cpu.pc & 0xFF) as u8);
 
     cpu.pc = address;
     false

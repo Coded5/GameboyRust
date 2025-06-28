@@ -1,7 +1,4 @@
-use super::{
-    cpu::{request_interrupt, INT_TIMER},
-    memory::Memory,
-};
+use super::{bus::Bus, interrupt::INT_TIMER};
 
 pub const DIV: u16 = 0xFF04;
 pub const TIMA: u16 = 0xFF05;
@@ -12,31 +9,23 @@ pub const TAC: u16 = 0xFF07;
 pub struct Timer {
     last_tick: bool,
     div: u16,
+
+    pub tima: u8,
+    pub tma: u8,
+    pub tac: u8,
 }
 
 impl Timer {
-    pub fn update(&mut self, cycle: i32, memory: &mut Memory) {
+    pub fn update(&mut self, cycle: i32, bus: &mut Bus) {
         for _ in 0..cycle {
-            self.increment_div(1, memory);
-            self.increment_tima(memory);
+            self.div = self.div.wrapping_add(cycle as u16);
+            self.increment_tima(bus);
         }
     }
 
-    fn increment_div(&mut self, cycle: i32, memory: &mut Memory) {
-        self.div = self.div.wrapping_add(cycle as u16);
-
-        if memory.div_reset {
-            self.div = 0;
-            memory.div_reset = false;
-        }
-
-        let hi = (self.div >> 8) & 0xFF;
-        memory.write_byte_uncheck(DIV, hi as u8);
-    }
-
-    pub fn increment_tima(&mut self, memory: &mut Memory) {
-        let tac_enable = (memory.read_byte(TAC) >> 2) & 1 == 1;
-        let bit = match memory.read_byte(TAC) & 3 {
+    pub fn increment_tima(&mut self, bus: &mut Bus) {
+        let tac_enable = (self.tac >> 2) & 1 == 1;
+        let bit = match self.tac & 3 {
             0 => 9,
             1 => 3,
             2 => 5,
@@ -48,15 +37,22 @@ impl Timer {
         let tick = tac_enable && div_bit;
 
         if self.last_tick && !tick {
-            let (res, overflow) = memory.read_byte(TIMA).overflowing_add(1);
-
-            memory.write_byte(TIMA, res);
+            let (res, overflow) = self.tima.overflowing_add(1);
+            self.tima = res;
 
             if overflow {
-                memory.write_byte(TIMA, memory.read_byte(TMA));
-                request_interrupt(INT_TIMER, memory);
+                self.tima = self.tma;
+                bus.request_interrupt(INT_TIMER);
             }
         }
         self.last_tick = tick;
+    }
+
+    pub fn div_reset(&mut self) {
+        self.div = 0;
+    }
+
+    pub fn div(&self) -> u8 {
+        ((self.div >> 8) & 0xFF) as u8
     }
 }

@@ -1,11 +1,11 @@
 use crate::emulator::{
+    bus::Bus,
     cpu::{Cpu, H, N, Z},
-    memory::Memory,
 };
 
 use super::operand::Operands;
 
-pub fn bit(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
+pub fn bit(cpu: &mut Cpu, bus: &mut Bus, operand1: Operands, operand2: Operands) {
     let b: u8 = match operand1 {
         Operands::I(val) => val,
         _ => panic!(),
@@ -19,7 +19,7 @@ pub fn bit(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -30,7 +30,7 @@ pub fn bit(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
     cpu.set(H, true);
 }
 
-pub fn set(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
+pub fn set(cpu: &mut Cpu, bus: &mut Bus, operand1: Operands, operand2: Operands) {
     let b: u8 = match operand1 {
         Operands::I(val) => val,
         _ => panic!(),
@@ -44,7 +44,7 @@ pub fn set(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -58,12 +58,12 @@ pub fn set(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e = res,
         Operands::H => cpu.h = res,
         Operands::L => cpu.l = res,
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
 }
 
-pub fn res(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
+pub fn res(cpu: &mut Cpu, bus: &mut Bus, operand1: Operands, operand2: Operands) {
     let b: u8 = match operand1 {
         Operands::I(val) => val,
         _ => panic!(),
@@ -77,7 +77,7 @@ pub fn res(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e,
         Operands::H => cpu.h,
         Operands::L => cpu.l,
-        Operands::AddrHL => memory.read_byte(cpu.hl()),
+        Operands::AddrHL => bus.read_byte(cpu.hl()),
         _ => panic!(),
     };
 
@@ -91,7 +91,7 @@ pub fn res(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
         Operands::E => cpu.e = res,
         Operands::H => cpu.h = res,
         Operands::L => cpu.l = res,
-        Operands::AddrHL => memory.write_byte(cpu.hl(), res),
+        Operands::AddrHL => bus.write_byte(cpu.hl(), res),
         _ => panic!(),
     };
 }

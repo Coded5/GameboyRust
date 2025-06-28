@@ -1,12 +1,12 @@
 use crate::emulator::{
+    bus::Bus,
     cpu::{Cpu, C, H, N, Z},
-    memory::Memory,
 };
 
 use super::operand::Operands;
 
-pub fn add_sp_i8(cpu: &mut Cpu, memory: &mut Memory) {
-    let rhs_raw = cpu.next_byte(memory);
+pub fn add_sp_i8(cpu: &mut Cpu, bus: &mut Bus) {
+    let rhs_raw = cpu.next_byte(bus);
     let rhs = rhs_raw as i8;
 
     let (res, _carry) = cpu.sp.overflowing_add_signed(rhs as i16);
@@ -21,9 +21,9 @@ pub fn add_sp_i8(cpu: &mut Cpu, memory: &mut Memory) {
     cpu.sp = res;
 }
 
-pub fn add(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Operands) {
+pub fn add(cpu: &mut Cpu, bus: &mut Bus, operand1: Operands, operand2: Operands) {
     if operand1 == Operands::SP && operand2 == Operands::I8 {
-        add_sp_i8(cpu, memory);
+        add_sp_i8(cpu, bus);
         return;
     }
 
@@ -54,7 +54,7 @@ pub fn add(cpu: &mut Cpu, memory: &mut Memory, operand1: Operands, operand2: Ope
     }
 }
 
-pub fn inc(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
+pub fn inc(cpu: &mut Cpu, _bus: &mut Bus, operand1: Operands) {
     let rhs = match operand1 {
         Operands::BC => cpu.bc(),
         Operands::DE => cpu.de(),
@@ -72,7 +72,7 @@ pub fn inc(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
     };
 }
 
-pub fn dec(cpu: &mut Cpu, _memory: &mut Memory, operand1: Operands) {
+pub fn dec(cpu: &mut Cpu, _bus: &mut Bus, operand1: Operands) {
     let rhs = match operand1 {
         Operands::BC => cpu.bc(),
         Operands::DE => cpu.de(),
