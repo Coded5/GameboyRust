@@ -104,7 +104,7 @@ impl MBC for MBC1 {
 
     fn write_byte(&mut self, address: u16, value: u8) {
         if !(0xA000..=0xBFFF).contains(&address) {
-            warn!(target: "MBC", "Attempted to write to ROM at address {:04X}", address);
+            self.handle_banking(address, value);
             return;
         }
 

@@ -18,7 +18,7 @@ pub struct Timer {
 impl Timer {
     pub fn update(&mut self, cycle: i32, bus: &mut Bus) {
         for _ in 0..cycle {
-            self.div = self.div.wrapping_add(cycle as u16);
+            self.div = self.div.wrapping_add(1u16);
             self.increment_tima(bus);
         }
     }

@@ -38,8 +38,11 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "args": ["-r", "./roms/untest/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "-l"],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "CPU=debug"
+            }
         },
         {
             "type": "lldb",

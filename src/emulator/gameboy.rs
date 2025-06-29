@@ -1,8 +1,4 @@
-use std::{
-    cell::{Ref, RefCell},
-    io,
-    rc::Rc,
-};
+use std::{cell::RefCell, io, rc::Rc};
 
 use super::{
     bus::Bus, cartridge::load_cartridge, cpu::Cpu, interrupt::InterruptState, joypad::Joypad,
