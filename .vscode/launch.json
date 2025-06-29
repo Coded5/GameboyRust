@@ -26,7 +26,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'gameboy'",
+            "name": "Debug executable 'gameboy' (rom: Interrupt)",
             "cargo": {
                 "args": [
                     "build",
@@ -42,6 +42,27 @@
             "cwd": "${workspaceFolder}",
             "env": {
                 "RUST_LOG": "CPU=debug"
+            }
+        },
+                {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'gameboy' (rom: dmg-acid2.gb)",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=gameboy",
+                    "--package=gameboy"
+                ],
+                "filter": {
+                    "name": "gameboy",
+                    "kind": "bin"
+                }
+            },
+            "args": ["-r", "./roms/dmg-acid2.gb", "-l"],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "PPU=debug,CPU=debug"
             }
         },
         {
