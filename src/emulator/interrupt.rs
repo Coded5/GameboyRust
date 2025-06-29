@@ -16,7 +16,7 @@ pub struct InterruptState {
 
 impl InterruptState {
     pub fn is_requested(&self, interrupt: u8) -> bool {
-        (self.interrupt_flag >> interrupt) & 1 == 1
+        (self.interrupt_flag >> interrupt) & (self.interrupt_enable >> interrupt) & 1 == 1
     }
 
     pub fn have_pending(&self) -> bool {

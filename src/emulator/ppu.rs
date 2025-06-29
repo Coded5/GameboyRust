@@ -182,6 +182,10 @@ impl Ppu {
 
     fn draw_lcd(&mut self) -> [u8; 160] {
         if !self.get_lcdc(LCDC_PRIORITY) {
+            for x in 0..160 {
+                self.frame_buffer[x + (self.ly as usize) * 160] = 0;
+            }
+
             return [0u8; 160];
         }
 
@@ -350,8 +354,6 @@ impl Ppu {
     }
 
     pub fn update(&mut self, cycles: i32, bus: &mut Bus) {
-        self.update_dma_transfer(cycles, bus);
-
         if !self.get_lcdc(LCDC_PPU_ENABLE) {
             return;
         }
@@ -378,6 +380,7 @@ impl Ppu {
 
                 if self.current_cycle >= 172 {
                     self.current_cycle -= 172;
+                    debug!(target: "PPU", "{:#8b}", self.lcdc);
                     let color_index = self.draw_lcd();
                     self.draw_lcd_sprite(color_index);
                     self.mode = PpuMode::HBLANK;
@@ -415,9 +418,15 @@ impl Ppu {
 
         self.stat &= !3;
         self.stat |= ppu_mode;
+
+        self.update_dma_transfer(cycles, bus);
     }
 
     pub fn update_dma_transfer(&mut self, cycle: i32, bus: &mut Bus) {
+        if !self.dma_transfer_active {
+            return;
+        }
+
         self.dma_transfer_cycle += cycle;
 
         if self.dma_transfer_cycle >= 160 * 4 {
@@ -440,7 +449,7 @@ impl Ppu {
     }
 
     pub fn get_lcdc(&self, control: u8) -> bool {
-        (self.lcdc >> control) & 1 == 1
+        ((self.lcdc >> control) & 1) == 1
     }
 
     pub fn read_vram(&self, address: u16) -> u8 {
@@ -452,6 +461,7 @@ impl Ppu {
     }
 
     pub fn read_oam(&self, address: u16) -> u8 {
+        debug!(target: "PPU", "Reading OAM: {address:04X}");
         self.oam[(address - 0xFE00) as usize]
     }
 

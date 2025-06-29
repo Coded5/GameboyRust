@@ -1,10 +1,8 @@
-use std::env;
 use std::time::{Duration, Instant};
 
 use gameboy::{devices::screen::Screen, emulator::gameboy::Gameboy};
 use log::debug;
 use log::info;
-use log::LevelFilter;
 use num_format::{Locale, ToFormattedString};
 // use simplelog::CombinedLogger;
 // use simplelog::Config;
@@ -53,9 +51,6 @@ fn main() {
     let cycle_cap: u128 = 69905;
 
     let mut current_time = Instant::now();
-
-    let mut d = false;
-
     let mut track_cycle: u128 = 0;
 
     while screen.window.is_open() && !screen.window.is_key_down(minifb::Key::Escape) {
@@ -79,7 +74,10 @@ fn main() {
             gameboy.tick();
         }
 
-        screen.render(gameboy.get_frame_buffer());
+        if gameboy.can_render {
+            screen.render(gameboy.get_frame_buffer());
+        }
+
         fps += 1;
         track_cycle += gameboy.accum_cycle;
         gameboy.accum_cycle -= cycle_cap;
@@ -91,15 +89,6 @@ fn main() {
             fps = 0;
             gameboy.accum_cycle = 0;
             current_time = Instant::now();
-        }
-
-        // if screen.window.is_key_down(minifb::Key::O) && !d {
-        //     let _ = gameboy.memory.dump_oam_to_file("oam.bin");
-        //     d = true;
-        // }
-
-        if screen.window.is_key_down(minifb::Key::O) {
-            d = false;
         }
     }
 }
