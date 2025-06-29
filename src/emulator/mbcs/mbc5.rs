@@ -47,7 +47,8 @@ impl MBC for MBC5 {
         match address {
             0x0000..=0x3FFF => self.rom[address as usize],
             0x4000..=0x7FFF => {
-                let local_address = (0x4000 * self.rom_bank + (address - 0x4000)) as usize;
+                let local_address =
+                    (0x4000u32 * (self.rom_bank as u32) + ((address as u32) - 0x4000)) as usize;
                 self.rom[local_address]
             }
             0xA000..=0xBFFF => {

@@ -1,5 +1,6 @@
 /target
 /sm83
+/roms/untest
 
 *.log
 *.txt
