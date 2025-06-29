@@ -38,7 +38,7 @@ fn main() {
 
     let mut screen = Screen::default();
 
-    debug!("{}", args.bootrom);
+    // debug!("{}", args.bootrom);
 
     if args.bootrom.is_empty() {
         gameboy.no_bootrom_init();
@@ -76,15 +76,15 @@ fn main() {
 
         if gameboy.can_render {
             screen.render(gameboy.get_frame_buffer());
+            fps += 1;
         }
 
-        fps += 1;
         track_cycle += gameboy.accum_cycle;
         gameboy.accum_cycle -= cycle_cap;
 
         if current_time.elapsed() >= Duration::from_secs(1) {
             let cycle = track_cycle.to_formatted_string(&Locale::en);
-            info!("{cycle} T-cycle, {fps} FPS");
+            info!(target:"GB", "{cycle} T-cycle, {fps} FPS");
             track_cycle = 0;
             fps = 0;
             gameboy.accum_cycle = 0;

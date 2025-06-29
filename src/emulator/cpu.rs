@@ -163,22 +163,22 @@ impl Cpu {
                 .unwrap_or_else(|_| panic!("Invalid opcode reached: {:02X}", opcode_byte))
         };
 
-        let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
-        let tpc = self.pc;
-        (0..opcode.length - 1).for_each(|i| {
-            data[i] = bus.read_byte(tpc + i as u16);
-        });
-        debug!(
-            target: "CPU",
-            "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X} SP={:04X}",
-            self.pc - 1,
-            Cpu::disassemble_opcode(&opcode, data),
-            self.af(),
-            self.bc(),
-            self.de(),
-            self.hl(),
-            self.sp
-        );
+        // let mut data: Vec<u8> = vec![0u8; opcode.length - 1];
+        // let tpc = self.pc;
+        // (0..opcode.length - 1).for_each(|i| {
+        //     data[i] = bus.read_byte(tpc + i as u16);
+        // });
+        // debug!(
+        //     target: "CPU",
+        //     "{:04X} {: <20}| AF={:04X}, BC={:04X}, DE={:04X}, HL={:04X} SP={:04X}",
+        //     self.pc - 1,
+        //     Cpu::disassemble_opcode(&opcode, data),
+        //     self.af(),
+        //     self.bc(),
+        //     self.de(),
+        //     self.hl(),
+        //     self.sp
+        // );
 
         //Execute
         let time = execute_opcode(self, bus, interrupt, opcode.clone());

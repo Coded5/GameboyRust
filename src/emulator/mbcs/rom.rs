@@ -14,8 +14,6 @@ impl Rom {
 }
 
 impl MBC for Rom {
-    fn handle_banking(&mut self, _address: u16, _value: u8) {}
-
     fn read_byte(&self, address: u16) -> u8 {
         self.memory[address as usize]
     }

@@ -168,11 +168,11 @@ impl Ppu {
             self.set_stat(2);
 
             if self.test_stat(STAT_LYC_INT) {
-                debug!(
-                    target: "PPU",
-                    "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
-                    self.mode, self.ly, self.ly
-                );
+                // debug!(
+                //     target: "PPU",
+                //     "Calling LY == LYC Interrupt during {:?} in LY({} / {:02X})",
+                //     self.mode, self.ly, self.ly
+                // );
                 bus.request_interrupt(INT_LCD);
             }
         } else {
@@ -380,7 +380,7 @@ impl Ppu {
 
                 if self.current_cycle >= 172 {
                     self.current_cycle -= 172;
-                    debug!(target: "PPU", "{:#8b}", self.lcdc);
+                    // debug!(target: "PPU", "{:#8b}", self.lcdc);
                     let color_index = self.draw_lcd();
                     self.draw_lcd_sprite(color_index);
                     self.mode = PpuMode::HBLANK;
@@ -461,7 +461,7 @@ impl Ppu {
     }
 
     pub fn read_oam(&self, address: u16) -> u8 {
-        debug!(target: "PPU", "Reading OAM: {address:04X}");
+        // debug!(target: "PPU", "Reading OAM: {address:04X}");
         self.oam[(address - 0xFE00) as usize]
     }
 

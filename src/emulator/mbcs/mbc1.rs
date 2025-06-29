@@ -65,9 +65,7 @@ impl MBC1 {
     pub fn enable_ram(&mut self, value: u8) {
         self.ram_enable = (value & 0x0F) == 0x0A;
     }
-}
 
-impl MBC for MBC1 {
     fn handle_banking(&mut self, address: u16, value: u8) {
         match address {
             0x0000..0x2000 => self.enable_ram(value),
@@ -83,7 +81,9 @@ impl MBC for MBC1 {
             _ => (),
         }
     }
+}
 
+impl MBC for MBC1 {
     fn read_byte(&self, address: u16) -> u8 {
         // debug!(target: "Memory", "Reading MBC at {:04X}", address);
 
