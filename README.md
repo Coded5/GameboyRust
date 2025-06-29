@@ -52,8 +52,8 @@ APU|🚫|
 MBC1|✅|
 MBC2| 🚫|
 MBC3| 🚫|
-MBC5| ⁉️|
+MBC5| ✅|
 Save State|🚫|
-Command lines|⁉️|
+Command lines|✅|
 
 **There's some code that I would like to refactor because it is an absolute jank**
